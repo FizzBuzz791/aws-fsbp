@@ -1,0 +1,35 @@
+{
+  "name": "aws-fsbp",
+  "version": "0.2.0-beta",
+  "description": "AWS Foundational Security Best Practices for use with AWS CDK",
+  "main": "./dist/aws-foundational-security-best-practices.js",
+  "types": "./dist/aws-foundational-security-best-practices.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FizzBuzz791/aws-fsbp.git"
+  },
+  "keywords": [
+    "aws",
+    "cdk",
+    "fsbp"
+  ],
+  "author": "Trent Jones <trent.william.jones@gmail.com>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/FizzBuzz791/aws-fsbp/issues"
+  },
+  "homepage": "https://github.com/FizzBuzz791/aws-fsbp#readme",
+  "dependencies": {
+    "@aws-cdk/aws-iam": "^1.116.0",
+    "@aws-cdk/aws-lambda": "^1.116.0",
+    "@aws-cdk/core": "^1.116.0"
+  },
+  "devDependencies": {
+    "@tsconfig/recommended": "^1.0.1",
+    "typescript": "^4.3.5"
+  }
+}
