@@ -1,16 +1,36 @@
 import { Annotations, IAspect, IConstruct } from "@aws-cdk/core";
-import {
-  CfnPolicy,
-  Effect,
-  PolicyDocument,
-  PolicyStatement,
-} from "@aws-cdk/aws-iam";
+import { CfnPolicy, Effect } from "@aws-cdk/aws-iam";
 import { CfnFunction, Runtime } from "@aws-cdk/aws-lambda";
+
+export interface FSBPConfig {
+  iam?: {
+    fullAdmin?: boolean;
+    wildcardServiceActions?: boolean;
+  };
+  lambda?: {
+    supportedRuntimes?: boolean;
+  };
+}
 
 /**
  * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html
  */
 export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
+  private Config: FSBPConfig;
+
+  /**
+   * Initialise a new Checker. All values in the configuration default to true if not provided.
+   * @param config
+   */
+  constructor(
+    config: FSBPConfig = {
+      iam: { fullAdmin: true, wildcardServiceActions: true },
+      lambda: { supportedRuntimes: true },
+    }
+  ) {
+    this.Config = config;
+  }
+
   public visit(node: IConstruct): void {
     if (node instanceof CfnPolicy) {
       this.checkIAMPolicyCompliance(node);
@@ -21,7 +41,10 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
 
   private checkLamdaCompliance(node: CfnFunction) {
     this.checkLambdaPublicAccess(node);
-    this.checkLambdaSupportedRuntime(node);
+
+    if (this.Config.lambda?.supportedRuntimes ?? true) {
+      this.checkLambdaSupportedRuntime(node);
+    }
   }
 
   /**
@@ -61,8 +84,13 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
   }
 
   private checkIAMPolicyCompliance(node: CfnPolicy) {
-    this.checkIAMPolicyFullAdmin(node);
-    this.checkIAMPolicyServiceWildcards(node);
+    if (this.Config.iam?.fullAdmin ?? true) {
+      this.checkIAMPolicyFullAdmin(node);
+    }
+
+    if (this.Config.iam?.wildcardServiceActions ?? true) {
+      this.checkIAMPolicyServiceWildcards(node);
+    }
   }
 
   /**
