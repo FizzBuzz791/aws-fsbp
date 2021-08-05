@@ -10,6 +10,8 @@ Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
 
 ## Supported best practices
 
+Each of the following checks has an associated config option that can be passed to the constructor. All options are enabled by default and must be explicitly opted-out.
+
 - IAM
   - [IAM.1] IAM policies should not allow full "\*" administrative privileges.
   - [IAM.21] IAM customer managed policies that you create should not allow wildcard actions for services.
