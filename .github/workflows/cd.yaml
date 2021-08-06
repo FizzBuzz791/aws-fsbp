@@ -28,10 +28,10 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set name
-        run: git config --global user.name ${{ github.event.push.pusher.name }}
+        run: git config --global user.name ${{ github.event.pusher.name }}
 
       - name: Set email
-        run: git config --global user.email ${{ github.event.push.pusher.email }}
+        run: git config --global user.email ${{ github.event.pusher.email }}
 
       - name: Update package version
         run: npm version ${{ steps.tag_version.outputs.new_tag }}
