@@ -86,6 +86,15 @@ jobs:
           node-version: 16.x
           registry-url: https://npm.pkg.github.com/
 
+      - name: Set name
+        run: git config --global user.name ${{ github.event.pusher.name }}
+
+      - name: Set email
+        run: git config --global user.email ${{ github.event.pusher.email }}
+
+      - name: Update package version
+        run: npm version ${{ needs.build.outputs.new_tag }}
+
       - name: Publish to GitHub Packages
         uses: JS-DevTools/npm-publish@v1
         with:
