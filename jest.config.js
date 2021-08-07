@@ -6,4 +6,5 @@ module.exports = {
     "^.+\\.tsx?$": "ts-jest",
   },
   moduleFileExtensions: ["ts", "tsx", "js", "json", "jsx", "node"],
+  reporters: ["default", "jest-junit"],
 };
