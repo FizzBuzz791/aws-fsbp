@@ -97,7 +97,7 @@ jobs:
 
       # GitHub packages only support scoped packages
       - name: Update package name
-        run: npm pkg set name=${{ github.repository_owner }}/aws-fsbp
+        run: npm pkg set name=@${{ github.repository_owner }}/aws-fsbp
 
       - name: Publish to GitHub Packages
         run: npm publish
