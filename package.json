@@ -25,17 +25,19 @@
   },
   "homepage": "https://github.com/FizzBuzz791/aws-fsbp#readme",
   "dependencies": {
-    "@aws-cdk/aws-iam": "^1.116.0",
-    "@aws-cdk/aws-lambda": "^1.116.0",
-    "@aws-cdk/core": "^1.116.0"
+    "@aws-cdk/aws-iam": "^1.117.0",
+    "@aws-cdk/aws-lambda": "^1.117.0",
+    "@aws-cdk/core": "^1.117.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^13.1.0",
     "@commitlint/config-conventional": "^13.1.0",
     "@tsconfig/recommended": "^1.0.1",
+    "@types/jest": "^26.0.24",
     "commitizen": "^4.2.4",
     "cz-conventional-changelog": "^3.3.0",
     "husky": "^7.0.1",
+    "ts-jest": "^27.0.4",
     "typescript": "^4.3.5"
   },
   "config": {
