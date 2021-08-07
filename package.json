@@ -29,7 +29,10 @@
     "@aws-cdk/core": "^1.116.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^13.1.0",
+    "@commitlint/config-conventional": "^13.1.0",
     "@tsconfig/recommended": "^1.0.1",
+    "husky": "^7.0.1",
     "typescript": "^4.3.5"
   }
 }
