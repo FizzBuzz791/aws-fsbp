@@ -7,6 +7,8 @@ on:
 jobs:
   cd:
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
     steps:
       # Checkout the source code
       - name: Checkout
