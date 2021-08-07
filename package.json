@@ -51,7 +51,7 @@
     "@FizzBuzz791:registry": "https://npm.pkg.github.com"
   },
   "files": [
-    "dist",
+    "/dist",
     "LICENSE",
     "README.md",
     "package.json"

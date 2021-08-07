@@ -29,6 +29,12 @@ jobs:
         uses: mathieudutour/github-tag-action@v5.6
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload dist
+        uses: actions/upload-artifact@v2
+        with:
+          name: dist
+          path: dist/*
     outputs:
       new_tag: ${{ steps.tag_version.outputs.new_tag }}
       changelog: ${{ steps.tag_version.outputs.changelog }}
@@ -40,6 +46,11 @@ jobs:
       # Checkout the source code
       - name: Checkout
         uses: actions/checkout@v2
+
+      - name: Download dist
+        uses: actions/download-artifact@v2
+        with:
+          name: dist
 
       - name: Create a GitHub release
         uses: actions/create-release@v1
@@ -66,6 +77,11 @@ jobs:
 
       - name: Update package version
         run: npm version ${{ needs.build.outputs.new_tag }}
+
+      - name: Download dist
+        uses: actions/download-artifact@v2
+        with:
+          name: dist
 
       - name: Publish to NPM
         uses: JS-DevTools/npm-publish@v1
@@ -98,6 +114,11 @@ jobs:
       # GitHub packages only support scoped packages
       - name: Update package name
         run: npm pkg set name=@${{ github.repository_owner }}/aws-fsbp
+
+      - name: Download dist
+        uses: actions/download-artifact@v2
+        with:
+          name: dist
 
       - name: Publish to GitHub Packages
         run: npm publish
