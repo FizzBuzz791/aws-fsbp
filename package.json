@@ -48,5 +48,11 @@
   },
   "publishConfig": {
     "@FizzBuzz791:registry": "https://npm.pkg.github.com"
-  }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md",
+    "package.json"
+  ]
 }
