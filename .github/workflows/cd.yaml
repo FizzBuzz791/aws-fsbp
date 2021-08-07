@@ -5,10 +5,8 @@ on:
       - main
 
 jobs:
-  cd:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      packages: write
     steps:
       # Checkout the source code
       - name: Checkout
@@ -41,6 +39,10 @@ jobs:
       - name: Update package version
         run: npm version ${{ steps.tag_version.outputs.new_tag }}
 
+  github-release:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
       - name: Create a GitHub release
         uses: actions/create-release@v1
         env:
@@ -50,11 +52,19 @@ jobs:
           release_name: Release ${{ steps.tag_version.outputs.new_tag }}
           body: ${{ steps.tag_version.outputs.changelog }}
 
+  npm-publish:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
       - name: Publish to NPM
         uses: JS-DevTools/npm-publish@v1
         with:
           token: ${{ secrets.NPM_TOKEN }}
 
+  github-publish:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
       - name: Point to GitHub Packages
         uses: actions/setup-node@v2
         with:
@@ -62,6 +72,6 @@ jobs:
           registry-url: https://npm.pkg.github.com/
 
       - name: Publish to GitHub Packages
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        uses: JS-DevTools/npm-publish@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
