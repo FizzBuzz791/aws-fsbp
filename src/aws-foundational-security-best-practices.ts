@@ -1,6 +1,7 @@
 import { Annotations, IAspect, IConstruct } from "@aws-cdk/core";
 import { CfnPolicy, Effect } from "@aws-cdk/aws-iam";
 import { CfnFunction, Runtime } from "@aws-cdk/aws-lambda";
+import { CfnDBInstance } from "@aws-cdk/aws-rds";
 
 export interface FSBPConfig {
   iam?: {
@@ -36,7 +37,21 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
       this.checkIAMPolicyCompliance(node);
     } else if (node instanceof CfnFunction) {
       this.checkLamdaCompliance(node);
+    } else if (node instanceof CfnDBInstance) {
+      this.checkDBCompliance(node);
     }
+  }
+
+  private checkDBCompliance(node: CfnDBInstance) {
+    this.checkSnapshotPublicAccess(node);
+  }
+
+  /**
+   * [RDS.1] RDS snapshots should be private
+   * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-1
+   */
+  private checkSnapshotPublicAccess(node: CfnDBInstance) {
+    // TODO: This is complicated...
   }
 
   private checkLamdaCompliance(node: CfnFunction) {
