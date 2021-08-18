@@ -11,6 +11,9 @@ export interface FSBPConfig {
   lambda?: {
     supportedRuntimes?: boolean;
   };
+  rds?: {
+    publicAccess?: boolean;
+  };
 }
 
 /**
@@ -27,6 +30,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
     config: FSBPConfig = {
       iam: { fullAdmin: true, wildcardServiceActions: true },
       lambda: { supportedRuntimes: true },
+      rds: { publicAccess: true },
     }
   ) {
     this.Config = config;
@@ -44,6 +48,10 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
 
   private checkDBCompliance(node: CfnDBInstance) {
     this.checkSnapshotPublicAccess(node);
+
+    if (this.Config.rds?.publicAccess ?? true) {
+      this.checkRDSPublicAccess(node);
+    }
   }
 
   /**
@@ -52,6 +60,19 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
    */
   private checkSnapshotPublicAccess(node: CfnDBInstance) {
     // TODO: This is complicated...
+  }
+
+  /**
+   * [RDS.2] RDS DB instances should prohibit public access, determined by the PubliclyAccessible configuration
+   * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-2
+   */
+  private checkRDSPublicAccess(node: CfnDBInstance) {
+    if (node.publiclyAccessible) {
+      // Undefined is the same as false in this context, so we don't need to check or raise an error.
+      Annotations.of(node).addError(
+        "[RDS.2] RDS DB instances should prohibit public access, determined by the PubliclyAccessible configuration"
+      );
+    }
   }
 
   private checkLamdaCompliance(node: CfnFunction) {
