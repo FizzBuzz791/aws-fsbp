@@ -14,6 +14,7 @@ export interface FSBPConfig {
   rds?: {
     publicAccess?: boolean;
     storageEncrypted?: boolean;
+    multiAz?: boolean;
   };
 }
 
@@ -31,7 +32,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
     config: FSBPConfig = {
       iam: { fullAdmin: true, wildcardServiceActions: true },
       lambda: { supportedRuntimes: true },
-      rds: { publicAccess: true, storageEncrypted: true },
+      rds: { publicAccess: true, storageEncrypted: true, multiAz: true },
     }
   ) {
     this.Config = config;
@@ -56,6 +57,10 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
 
     if (this.Config.rds?.storageEncrypted ?? true) {
       this.checkRDSEncryption(node);
+    }
+
+    if (this.Config.rds?.multiAz ?? true) {
+      this.checkMultipleAZs(node);
     }
   }
 
@@ -88,6 +93,18 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
     if (!node.storageEncrypted) {
       Annotations.of(node).addError(
         "[RDS.3] RDS DB instances should have encryption at rest enabled"
+      );
+    }
+  }
+
+  /**
+   * [RDS.5] RDS DB instances should be configured with multiple Availability Zones
+   * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-5
+   */
+  private checkMultipleAZs(node: CfnDBInstance) {
+    if (!node.multiAz) {
+      Annotations.of(node).addError(
+        "[RDS.5] RDS DB instances should be configured with multiple Availability Zones"
       );
     }
   }

@@ -25,6 +25,7 @@ describe("RDS", () => {
         vpc: new Vpc(stack, "vpc", {}),
         publiclyAccessible: false,
         storageEncrypted: true,
+        multiAz: true,
       });
       Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
 
@@ -47,6 +48,7 @@ describe("RDS", () => {
         vpc: new Vpc(stack, "vpc", {}),
         publiclyAccessible: true,
         storageEncrypted: true,
+        multiAz: true,
       });
       Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
 
@@ -73,6 +75,7 @@ describe("RDS", () => {
         vpc: new Vpc(stack, "vpc", {}),
         publiclyAccessible: true,
         storageEncrypted: true,
+        multiAz: true,
       });
       Aspects.of(app).add(
         new AWSFoundationalSecurityBestPracticesChecker({
@@ -101,6 +104,7 @@ describe("RDS", () => {
         vpc: new Vpc(stack, "vpc", {}),
         publiclyAccessible: false,
         storageEncrypted: true,
+        multiAz: true,
       });
       Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
 
@@ -123,6 +127,7 @@ describe("RDS", () => {
         vpc: new Vpc(stack, "vpc", {}),
         publiclyAccessible: false,
         storageEncrypted: false,
+        multiAz: true,
       });
       Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
 
@@ -149,6 +154,7 @@ describe("RDS", () => {
         vpc: new Vpc(stack, "vpc", {}),
         publiclyAccessible: false,
         storageEncrypted: false,
+        multiAz: true,
       });
       Aspects.of(app).add(
         new AWSFoundationalSecurityBestPracticesChecker({
@@ -160,6 +166,85 @@ describe("RDS", () => {
       const synthMessages = app
         .synth({ validateOnSynthesis: true, force: true })
         .getStackByName("test-rds-3-stack-ignore-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+  });
+
+  describe("[RDS.5] RDS DB instances should be configured with multiple Availability Zones", () => {
+    test("Given an RDS that is configured with multiple AZs, When synth is run, Then synth should pass", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-5-stack-pass", {});
+      new DatabaseInstance(stack, "rds-with-multiple-azs", {
+        engine: DatabaseInstanceEngine.mysql({
+          version: MysqlEngineVersion.VER_5_7,
+        }),
+        vpc: new Vpc(stack, "vpc", {}),
+        publiclyAccessible: false,
+        storageEncrypted: true,
+        multiAz: true,
+      });
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-5-stack-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+
+    test("Given an RDS that is configured without multiple AZs, When synth is run, Then synth should fail", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-5-stack-fail", {});
+      new DatabaseInstance(stack, "rds-with-multiple-azs", {
+        engine: DatabaseInstanceEngine.mysql({
+          version: MysqlEngineVersion.VER_5_7,
+        }),
+        vpc: new Vpc(stack, "vpc", {}),
+        publiclyAccessible: false,
+        storageEncrypted: true,
+        multiAz: false,
+      });
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-5-stack-fail").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(1);
+      expect(synthMessages[0].level).toBe("error");
+      expect(synthMessages[0].entry.data).toBe(
+        "[RDS.5] RDS DB instances should be configured with multiple Availability Zones"
+      );
+    });
+
+    test("Given an RDS that is configured without multiple AZs and RDS.5 is ignored, When synth is run, Then synth should pass", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-5-stack-ignore-pass", {});
+      new DatabaseInstance(stack, "rds-with-multiple-azs", {
+        engine: DatabaseInstanceEngine.mysql({
+          version: MysqlEngineVersion.VER_5_7,
+        }),
+        vpc: new Vpc(stack, "vpc", {}),
+        publiclyAccessible: false,
+        storageEncrypted: true,
+        multiAz: false,
+      });
+      Aspects.of(app).add(
+        new AWSFoundationalSecurityBestPracticesChecker({
+          rds: { multiAz: false },
+        })
+      );
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-5-stack-ignore-pass").messages;
 
       // Assert
       expect(synthMessages.length).toBe(0);
