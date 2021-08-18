@@ -13,6 +13,7 @@ export interface FSBPConfig {
   };
   rds?: {
     publicAccess?: boolean;
+    storageEncrypted?: boolean;
   };
 }
 
@@ -30,7 +31,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
     config: FSBPConfig = {
       iam: { fullAdmin: true, wildcardServiceActions: true },
       lambda: { supportedRuntimes: true },
-      rds: { publicAccess: true },
+      rds: { publicAccess: true, storageEncrypted: true },
     }
   ) {
     this.Config = config;
@@ -52,6 +53,10 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
     if (this.Config.rds?.publicAccess ?? true) {
       this.checkRDSPublicAccess(node);
     }
+
+    if (this.Config.rds?.storageEncrypted ?? true) {
+      this.checkRDSEncryption(node);
+    }
   }
 
   /**
@@ -71,6 +76,18 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
       // Undefined is the same as false in this context, so we don't need to check or raise an error.
       Annotations.of(node).addError(
         "[RDS.2] RDS DB instances should prohibit public access, determined by the PubliclyAccessible configuration"
+      );
+    }
+  }
+
+  /**
+   * [RDS.3] RDS DB instances should have encryption at rest enabled
+   * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-3
+   */
+  private checkRDSEncryption(node: CfnDBInstance) {
+    if (!node.storageEncrypted) {
+      Annotations.of(node).addError(
+        "[RDS.3] RDS DB instances should have encryption at rest enabled"
       );
     }
   }
