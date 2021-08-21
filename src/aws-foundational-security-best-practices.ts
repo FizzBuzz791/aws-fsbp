@@ -16,6 +16,7 @@ export interface FSBPConfig {
     storageEncrypted?: boolean;
     multiAz?: boolean;
     enhancedMonitoring?: boolean;
+    deletionProtection?: boolean;
   };
 }
 
@@ -38,6 +39,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
         storageEncrypted: true,
         multiAz: true,
         enhancedMonitoring: true,
+        deletionProtection: true,
       },
     }
   ) {
@@ -71,6 +73,10 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
 
     if (this.Config.rds?.enhancedMonitoring ?? true) {
       this.checkEnhancedMonitoring(node);
+    }
+
+    if (this.Config.rds?.deletionProtection ?? true) {
+      this.checkDeletionProtection(node);
     }
   }
 
@@ -127,6 +133,18 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
     if (!node.monitoringInterval || node.monitoringInterval < 1) {
       Annotations.of(node).addError(
         "[RDS.6] Enhanced monitoring should be configured for RDS DB instances and clusters"
+      );
+    }
+  }
+
+  /**
+   * [RDS.8] RDS DB instances should have deletion protection enabled
+   * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-8
+   */
+  private checkDeletionProtection(node: CfnDBInstance) {
+    if (!node.deletionProtection) {
+      Annotations.of(node).addError(
+        "[RDS.8] RDS DB instances should have deletion protection enabled"
       );
     }
   }

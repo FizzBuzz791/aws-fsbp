@@ -14,6 +14,7 @@ export class RdsInstanceBuilder implements IBuilder<DatabaseInstance> {
   private _storageEncrypted: boolean = true;
   private _multiAz: boolean = true;
   private _monitoringInterval: number = 60;
+  private _deletionProtection: boolean = true;
 
   constructor(stack: Stack) {
     this._stack = stack;
@@ -41,6 +42,11 @@ export class RdsInstanceBuilder implements IBuilder<DatabaseInstance> {
     return this;
   }
 
+  withDeletionProtection(deletionProtection: boolean) {
+    this._deletionProtection = deletionProtection;
+    return this;
+  }
+
   build(): DatabaseInstance {
     return new DatabaseInstance(this._stack, "RdsInstance", {
       engine: DatabaseInstanceEngine.mysql({
@@ -51,6 +57,7 @@ export class RdsInstanceBuilder implements IBuilder<DatabaseInstance> {
       storageEncrypted: this._storageEncrypted,
       multiAz: this._multiAz,
       monitoringInterval: Duration.seconds(this._monitoringInterval),
+      deletionProtection: this._deletionProtection,
     });
   }
 }

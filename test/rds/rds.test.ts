@@ -228,4 +228,59 @@ describe("RDS", () => {
       expect(synthMessages.length).toBe(0);
     });
   });
+
+  describe("[RDS.8] RDS DB instances should have deletion protection enabled", () => {
+    test("Given an RDS Instance that is configured with deletion protection, When synth is run, Then synth should pass", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-8-stack-pass", {});
+      new RdsInstanceBuilder(stack).withDeletionProtection(true).build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-8-stack-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+
+    test("Given an RDS Instance that is configured without deletion protection, When synth is run, Then synth should fail", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-8-stack-fail", {});
+      new RdsInstanceBuilder(stack).withDeletionProtection(false).build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-8-stack-fail").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(1);
+      expect(synthMessages[0].level).toBe("error");
+      expect(synthMessages[0].entry.data).toBe(
+        "[RDS.8] RDS DB instances should have deletion protection enabled"
+      );
+    });
+
+    test("Given an RDS Instance that is configured without deletion protection and RDS.8 is ignored, When synth is run, Then synth should pass", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-8-stack-ignore-pass", {});
+      new RdsInstanceBuilder(stack).withDeletionProtection(false).build();
+      Aspects.of(app).add(
+        new AWSFoundationalSecurityBestPracticesChecker({
+          rds: { deletionProtection: false },
+        })
+      );
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-8-stack-ignore-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+  });
 });
