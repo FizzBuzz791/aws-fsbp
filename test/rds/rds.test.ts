@@ -1,11 +1,6 @@
-import { Vpc } from "@aws-cdk/aws-ec2";
-import {
-  DatabaseInstance,
-  DatabaseInstanceEngine,
-  MysqlEngineVersion,
-} from "@aws-cdk/aws-rds";
 import { App, Aspects, Stack } from "@aws-cdk/core";
-import { AWSFoundationalSecurityBestPracticesChecker } from "../src/aws-foundational-security-best-practices";
+import { AWSFoundationalSecurityBestPracticesChecker } from "../../src/aws-foundational-security-best-practices";
+import { RdsInstanceBuilder } from "./RdsInstanceBuilder";
 
 describe("RDS", () => {
   let app: App;
@@ -18,15 +13,7 @@ describe("RDS", () => {
     test("Given an RDS that is not publicly accessible, When synth is run, Then synth should pass", () => {
       // Arrange
       const stack = new Stack(app, "test-rds-2-stack-pass", {});
-      new DatabaseInstance(stack, "rds-without-public-access", {
-        engine: DatabaseInstanceEngine.mysql({
-          version: MysqlEngineVersion.VER_5_7,
-        }),
-        vpc: new Vpc(stack, "vpc", {}),
-        publiclyAccessible: false,
-        storageEncrypted: true,
-        multiAz: true,
-      });
+      new RdsInstanceBuilder(stack).withPublicAccess(false).build();
       Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
 
       // Act
@@ -41,15 +28,7 @@ describe("RDS", () => {
     test("Given an RDS that is publicly accessible, When synth is run, Then synth should fail", () => {
       // Arrange
       const stack = new Stack(app, "test-rds-2-stack-fail", {});
-      new DatabaseInstance(stack, "rds-with-public-access", {
-        engine: DatabaseInstanceEngine.mysql({
-          version: MysqlEngineVersion.VER_5_7,
-        }),
-        vpc: new Vpc(stack, "vpc", {}),
-        publiclyAccessible: true,
-        storageEncrypted: true,
-        multiAz: true,
-      });
+      new RdsInstanceBuilder(stack).withPublicAccess(true).build();
       Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
 
       // Act
@@ -68,15 +47,7 @@ describe("RDS", () => {
     test("Given an RDS that is publicly accessible and RDS.2 is ignored, When synth is run, Then synth should pass", () => {
       // Arrange
       const stack = new Stack(app, "test-rds-2-stack-ignore-pass", {});
-      new DatabaseInstance(stack, "rds-with-public-access", {
-        engine: DatabaseInstanceEngine.mysql({
-          version: MysqlEngineVersion.VER_5_7,
-        }),
-        vpc: new Vpc(stack, "vpc", {}),
-        publiclyAccessible: true,
-        storageEncrypted: true,
-        multiAz: true,
-      });
+      new RdsInstanceBuilder(stack).withPublicAccess(true).build();
       Aspects.of(app).add(
         new AWSFoundationalSecurityBestPracticesChecker({
           rds: { publicAccess: false },
@@ -97,15 +68,7 @@ describe("RDS", () => {
     test("Given an RDS that has encryption at rest enabled, When synth is run, Then synth should pass", () => {
       // Arrange
       const stack = new Stack(app, "test-rds-3-stack-pass", {});
-      new DatabaseInstance(stack, "rds-with-encryption-at-rest", {
-        engine: DatabaseInstanceEngine.mysql({
-          version: MysqlEngineVersion.VER_5_7,
-        }),
-        vpc: new Vpc(stack, "vpc", {}),
-        publiclyAccessible: false,
-        storageEncrypted: true,
-        multiAz: true,
-      });
+      new RdsInstanceBuilder(stack).withStorageEncrypted(true).build();
       Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
 
       // Act
@@ -120,15 +83,7 @@ describe("RDS", () => {
     test("Given an RDS that has encryption at rest disabled, When synth is run, Then synth should fail", () => {
       // Arrange
       const stack = new Stack(app, "test-rds-3-stack-fail", {});
-      new DatabaseInstance(stack, "rds-without-encryption-at-rest", {
-        engine: DatabaseInstanceEngine.mysql({
-          version: MysqlEngineVersion.VER_5_7,
-        }),
-        vpc: new Vpc(stack, "vpc", {}),
-        publiclyAccessible: false,
-        storageEncrypted: false,
-        multiAz: true,
-      });
+      new RdsInstanceBuilder(stack).withStorageEncrypted(false).build();
       Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
 
       // Act
@@ -147,15 +102,7 @@ describe("RDS", () => {
     test("Given an RDS that has encryption at rest disabled and RDS.3 is ignored, When synth is run, Then synth should pass", () => {
       // Arrange
       const stack = new Stack(app, "test-rds-3-stack-ignore-pass", {});
-      new DatabaseInstance(stack, "rds-without-encryption-at-rest", {
-        engine: DatabaseInstanceEngine.mysql({
-          version: MysqlEngineVersion.VER_5_7,
-        }),
-        vpc: new Vpc(stack, "vpc", {}),
-        publiclyAccessible: false,
-        storageEncrypted: false,
-        multiAz: true,
-      });
+      new RdsInstanceBuilder(stack).withStorageEncrypted(false).build();
       Aspects.of(app).add(
         new AWSFoundationalSecurityBestPracticesChecker({
           rds: { storageEncrypted: false },
@@ -176,15 +123,7 @@ describe("RDS", () => {
     test("Given an RDS that is configured with multiple AZs, When synth is run, Then synth should pass", () => {
       // Arrange
       const stack = new Stack(app, "test-rds-5-stack-pass", {});
-      new DatabaseInstance(stack, "rds-with-multiple-azs", {
-        engine: DatabaseInstanceEngine.mysql({
-          version: MysqlEngineVersion.VER_5_7,
-        }),
-        vpc: new Vpc(stack, "vpc", {}),
-        publiclyAccessible: false,
-        storageEncrypted: true,
-        multiAz: true,
-      });
+      new RdsInstanceBuilder(stack).build();
       Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
 
       // Act
@@ -199,15 +138,7 @@ describe("RDS", () => {
     test("Given an RDS that is configured without multiple AZs, When synth is run, Then synth should fail", () => {
       // Arrange
       const stack = new Stack(app, "test-rds-5-stack-fail", {});
-      new DatabaseInstance(stack, "rds-with-multiple-azs", {
-        engine: DatabaseInstanceEngine.mysql({
-          version: MysqlEngineVersion.VER_5_7,
-        }),
-        vpc: new Vpc(stack, "vpc", {}),
-        publiclyAccessible: false,
-        storageEncrypted: true,
-        multiAz: false,
-      });
+      new RdsInstanceBuilder(stack).withMultiAz(false).build();
       Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
 
       // Act
@@ -226,15 +157,7 @@ describe("RDS", () => {
     test("Given an RDS that is configured without multiple AZs and RDS.5 is ignored, When synth is run, Then synth should pass", () => {
       // Arrange
       const stack = new Stack(app, "test-rds-5-stack-ignore-pass", {});
-      new DatabaseInstance(stack, "rds-with-multiple-azs", {
-        engine: DatabaseInstanceEngine.mysql({
-          version: MysqlEngineVersion.VER_5_7,
-        }),
-        vpc: new Vpc(stack, "vpc", {}),
-        publiclyAccessible: false,
-        storageEncrypted: true,
-        multiAz: false,
-      });
+      new RdsInstanceBuilder(stack).withMultiAz(false).build();
       Aspects.of(app).add(
         new AWSFoundationalSecurityBestPracticesChecker({
           rds: { multiAz: false },
