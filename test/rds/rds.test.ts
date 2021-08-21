@@ -10,7 +10,7 @@ describe("RDS", () => {
   });
 
   describe("[RDS.2] RDS DB instances should prohibit public access", () => {
-    test("Given an RDS that is not publicly accessible, When synth is run, Then synth should pass", () => {
+    test("Given an RDS Instance that is not publicly accessible, When synth is run, Then synth should pass", () => {
       // Arrange
       const stack = new Stack(app, "test-rds-2-stack-pass", {});
       new RdsInstanceBuilder(stack).withPublicAccess(false).build();
@@ -25,7 +25,7 @@ describe("RDS", () => {
       expect(synthMessages.length).toBe(0);
     });
 
-    test("Given an RDS that is publicly accessible, When synth is run, Then synth should fail", () => {
+    test("Given an RDS Instance that is publicly accessible, When synth is run, Then synth should fail", () => {
       // Arrange
       const stack = new Stack(app, "test-rds-2-stack-fail", {});
       new RdsInstanceBuilder(stack).withPublicAccess(true).build();
@@ -44,7 +44,7 @@ describe("RDS", () => {
       );
     });
 
-    test("Given an RDS that is publicly accessible and RDS.2 is ignored, When synth is run, Then synth should pass", () => {
+    test("Given an RDS Instance that is publicly accessible and RDS.2 is ignored, When synth is run, Then synth should pass", () => {
       // Arrange
       const stack = new Stack(app, "test-rds-2-stack-ignore-pass", {});
       new RdsInstanceBuilder(stack).withPublicAccess(true).build();
@@ -65,7 +65,7 @@ describe("RDS", () => {
   });
 
   describe("[RDS.3] RDS DB instances should have encryption at rest enabled", () => {
-    test("Given an RDS that has encryption at rest enabled, When synth is run, Then synth should pass", () => {
+    test("Given an RDS Instance that has encryption at rest enabled, When synth is run, Then synth should pass", () => {
       // Arrange
       const stack = new Stack(app, "test-rds-3-stack-pass", {});
       new RdsInstanceBuilder(stack).withStorageEncrypted(true).build();
@@ -80,7 +80,7 @@ describe("RDS", () => {
       expect(synthMessages.length).toBe(0);
     });
 
-    test("Given an RDS that has encryption at rest disabled, When synth is run, Then synth should fail", () => {
+    test("Given an RDS Instance that has encryption at rest disabled, When synth is run, Then synth should fail", () => {
       // Arrange
       const stack = new Stack(app, "test-rds-3-stack-fail", {});
       new RdsInstanceBuilder(stack).withStorageEncrypted(false).build();
@@ -99,7 +99,7 @@ describe("RDS", () => {
       );
     });
 
-    test("Given an RDS that has encryption at rest disabled and RDS.3 is ignored, When synth is run, Then synth should pass", () => {
+    test("Given an RDS Instance that has encryption at rest disabled and RDS.3 is ignored, When synth is run, Then synth should pass", () => {
       // Arrange
       const stack = new Stack(app, "test-rds-3-stack-ignore-pass", {});
       new RdsInstanceBuilder(stack).withStorageEncrypted(false).build();
@@ -120,7 +120,7 @@ describe("RDS", () => {
   });
 
   describe("[RDS.5] RDS DB instances should be configured with multiple Availability Zones", () => {
-    test("Given an RDS that is configured with multiple AZs, When synth is run, Then synth should pass", () => {
+    test("Given an RDS Instance that is configured with multiple AZs, When synth is run, Then synth should pass", () => {
       // Arrange
       const stack = new Stack(app, "test-rds-5-stack-pass", {});
       new RdsInstanceBuilder(stack).build();
@@ -135,7 +135,7 @@ describe("RDS", () => {
       expect(synthMessages.length).toBe(0);
     });
 
-    test("Given an RDS that is configured without multiple AZs, When synth is run, Then synth should fail", () => {
+    test("Given an RDS Instance that is configured without multiple AZs, When synth is run, Then synth should fail", () => {
       // Arrange
       const stack = new Stack(app, "test-rds-5-stack-fail", {});
       new RdsInstanceBuilder(stack).withMultiAz(false).build();
@@ -154,7 +154,7 @@ describe("RDS", () => {
       );
     });
 
-    test("Given an RDS that is configured without multiple AZs and RDS.5 is ignored, When synth is run, Then synth should pass", () => {
+    test("Given an RDS Instance that is configured without multiple AZs and RDS.5 is ignored, When synth is run, Then synth should pass", () => {
       // Arrange
       const stack = new Stack(app, "test-rds-5-stack-ignore-pass", {});
       new RdsInstanceBuilder(stack).withMultiAz(false).build();
@@ -168,6 +168,61 @@ describe("RDS", () => {
       const synthMessages = app
         .synth({ validateOnSynthesis: true, force: true })
         .getStackByName("test-rds-5-stack-ignore-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+  });
+
+  describe("[RDS.6] Enhanced monitoring should be configured for RDS DB instances and clusters", () => {
+    test("Given an RDS Instance that is configured with enhanced monitoring, When synth is run, Then synth should pass", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-6-stack-pass", {});
+      new RdsInstanceBuilder(stack).withMonitoringInterval(60).build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-6-stack-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+
+    test("Given an RDS Instance that is configured without enhanced monitoring, When synth is run, Then synth should fail", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-6-stack-fail", {});
+      new RdsInstanceBuilder(stack).withMonitoringInterval(0).build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-6-stack-fail").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(1);
+      expect(synthMessages[0].level).toBe("error");
+      expect(synthMessages[0].entry.data).toBe(
+        "[RDS.6] Enhanced monitoring should be configured for RDS DB instances and clusters"
+      );
+    });
+
+    test("Given an RDS Instance that is configured without enhanced monitoring and RDS.6 is ignored, When synth is run, Then synth should pass", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-6-stack-ignore-pass", {});
+      new RdsInstanceBuilder(stack).withMonitoringInterval(0).build();
+      Aspects.of(app).add(
+        new AWSFoundationalSecurityBestPracticesChecker({
+          rds: { enhancedMonitoring: false },
+        })
+      );
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-6-stack-ignore-pass").messages;
 
       // Assert
       expect(synthMessages.length).toBe(0);

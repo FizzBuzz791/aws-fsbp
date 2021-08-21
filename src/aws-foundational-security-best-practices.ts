@@ -1,7 +1,7 @@
 import { Annotations, IAspect, IConstruct } from "@aws-cdk/core";
 import { CfnPolicy, Effect } from "@aws-cdk/aws-iam";
 import { CfnFunction, Runtime } from "@aws-cdk/aws-lambda";
-import { CfnDBInstance } from "@aws-cdk/aws-rds";
+import { CfnDBCluster, CfnDBInstance } from "@aws-cdk/aws-rds";
 
 export interface FSBPConfig {
   iam?: {
@@ -15,6 +15,7 @@ export interface FSBPConfig {
     publicAccess?: boolean;
     storageEncrypted?: boolean;
     multiAz?: boolean;
+    enhancedMonitoring?: boolean;
   };
 }
 
@@ -32,7 +33,12 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
     config: FSBPConfig = {
       iam: { fullAdmin: true, wildcardServiceActions: true },
       lambda: { supportedRuntimes: true },
-      rds: { publicAccess: true, storageEncrypted: true, multiAz: true },
+      rds: {
+        publicAccess: true,
+        storageEncrypted: true,
+        multiAz: true,
+        enhancedMonitoring: true,
+      },
     }
   ) {
     this.Config = config;
@@ -44,11 +50,11 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
     } else if (node instanceof CfnFunction) {
       this.checkLamdaCompliance(node);
     } else if (node instanceof CfnDBInstance) {
-      this.checkDBCompliance(node);
+      this.checkDBInstanceCompliance(node);
     }
   }
 
-  private checkDBCompliance(node: CfnDBInstance) {
+  private checkDBInstanceCompliance(node: CfnDBInstance) {
     this.checkSnapshotPublicAccess(node);
 
     if (this.Config.rds?.publicAccess ?? true) {
@@ -61,6 +67,10 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
 
     if (this.Config.rds?.multiAz ?? true) {
       this.checkMultipleAZs(node);
+    }
+
+    if (this.Config.rds?.enhancedMonitoring ?? true) {
+      this.checkEnhancedMonitoring(node);
     }
   }
 
@@ -105,6 +115,18 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
     if (!node.multiAz) {
       Annotations.of(node).addError(
         "[RDS.5] RDS DB instances should be configured with multiple Availability Zones"
+      );
+    }
+  }
+
+  /**
+   * [RDS.6] Enhanced monitoring should be configured for RDS DB instances and clusters
+   * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-6
+   */
+  private checkEnhancedMonitoring(node: CfnDBInstance) {
+    if (!node.monitoringInterval || node.monitoringInterval < 1) {
+      Annotations.of(node).addError(
+        "[RDS.6] Enhanced monitoring should be configured for RDS DB instances and clusters"
       );
     }
   }

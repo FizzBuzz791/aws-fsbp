@@ -4,14 +4,16 @@ import {
   DatabaseInstanceEngine,
   MysqlEngineVersion,
 } from "@aws-cdk/aws-rds";
-import { Stack } from "@aws-cdk/core";
+import { Duration, Stack } from "@aws-cdk/core";
 import { IBuilder } from "../IBuilder";
 
 export class RdsInstanceBuilder implements IBuilder<DatabaseInstance> {
   private readonly _stack: Stack;
+
   private _publiclyAccessible: boolean = false;
   private _storageEncrypted: boolean = true;
   private _multiAz: boolean = true;
+  private _monitoringInterval: number = 60;
 
   constructor(stack: Stack) {
     this._stack = stack;
@@ -32,6 +34,13 @@ export class RdsInstanceBuilder implements IBuilder<DatabaseInstance> {
     return this;
   }
 
+  withMonitoringInterval(
+    monitoringInterval: number
+  ): IBuilder<DatabaseInstance> {
+    this._monitoringInterval = monitoringInterval;
+    return this;
+  }
+
   build(): DatabaseInstance {
     return new DatabaseInstance(this._stack, "RdsInstance", {
       engine: DatabaseInstanceEngine.mysql({
@@ -41,6 +50,7 @@ export class RdsInstanceBuilder implements IBuilder<DatabaseInstance> {
       publiclyAccessible: this._publiclyAccessible,
       storageEncrypted: this._storageEncrypted,
       multiAz: this._multiAz,
+      monitoringInterval: Duration.seconds(this._monitoringInterval),
     });
   }
 }
