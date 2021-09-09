@@ -20,6 +20,12 @@ export interface FSBPConfig {
   };
 }
 
+type RDSInstance = CfnDBInstance | CfnDBCluster;
+
+const getDescriptor = (node: RDSInstance): string => {
+  return node instanceof CfnDBInstance ? "instances" : "cluster";
+};
+
 /**
  * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html
  */
@@ -51,12 +57,12 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
       this.checkIAMPolicyCompliance(node);
     } else if (node instanceof CfnFunction) {
       this.checkLamdaCompliance(node);
-    } else if (node instanceof CfnDBInstance) {
+    } else if (node instanceof CfnDBInstance || node instanceof CfnDBCluster) {
       this.checkDBInstanceCompliance(node);
     }
   }
 
-  private checkDBInstanceCompliance(node: CfnDBInstance) {
+  private checkDBInstanceCompliance(node: RDSInstance) {
     this.checkSnapshotPublicAccess(node);
 
     if (this.Config.rds?.publicAccess ?? true) {
@@ -84,7 +90,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
    * [RDS.1] RDS snapshots should be private
    * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-1
    */
-  private checkSnapshotPublicAccess(node: CfnDBInstance) {
+  private checkSnapshotPublicAccess(node: RDSInstance) {
     // TODO: This is complicated...
   }
 
@@ -92,8 +98,9 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
    * [RDS.2] RDS DB instances should prohibit public access, determined by the PubliclyAccessible configuration
    * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-2
    */
-  private checkRDSPublicAccess(node: CfnDBInstance) {
-    if (node.publiclyAccessible) {
+  private checkRDSPublicAccess(node: RDSInstance) {
+    // This check is only applicable to DB Instances.
+    if (node instanceof CfnDBInstance && node.publiclyAccessible) {
       // Undefined is the same as false in this context, so we don't need to check or raise an error.
       Annotations.of(node).addError(
         "[RDS.2] RDS DB instances should prohibit public access, determined by the PubliclyAccessible configuration"
@@ -105,10 +112,17 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
    * [RDS.3] RDS DB instances should have encryption at rest enabled
    * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-3
    */
-  private checkRDSEncryption(node: CfnDBInstance) {
-    if (!node.storageEncrypted) {
+  private checkRDSEncryption(node: RDSInstance) {
+    // This check is only applicable to instances, not clusters.
+    if (
+      node instanceof CfnDBInstance &&
+      node.dbClusterIdentifier === undefined &&
+      !node.storageEncrypted
+    ) {
       Annotations.of(node).addError(
-        "[RDS.3] RDS DB instances should have encryption at rest enabled"
+        `[RDS.3] RDS DB ${getDescriptor(
+          node
+        )} should have encryption at rest enabled`
       );
     }
   }
@@ -117,10 +131,17 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
    * [RDS.5] RDS DB instances should be configured with multiple Availability Zones
    * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-5
    */
-  private checkMultipleAZs(node: CfnDBInstance) {
-    if (!node.multiAz) {
+  private checkMultipleAZs(node: RDSInstance) {
+    // This check is only applicable to instances, not clusters.
+    if (
+      node instanceof CfnDBInstance &&
+      node.dbClusterIdentifier === undefined &&
+      !node.multiAz
+    ) {
       Annotations.of(node).addError(
-        "[RDS.5] RDS DB instances should be configured with multiple Availability Zones"
+        `[RDS.5] RDS DB ${getDescriptor(
+          node
+        )} should be configured with multiple Availability Zones`
       );
     }
   }
@@ -129,8 +150,12 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
    * [RDS.6] Enhanced monitoring should be configured for RDS DB instances and clusters
    * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-6
    */
-  private checkEnhancedMonitoring(node: CfnDBInstance) {
-    if (!node.monitoringInterval || node.monitoringInterval < 1) {
+  private checkEnhancedMonitoring(node: RDSInstance) {
+    if (
+      node instanceof CfnDBInstance &&
+      (!node.monitoringInterval || node.monitoringInterval < 1)
+    ) {
+      // Each instance in a cluster requires enhanced monitoring.
       Annotations.of(node).addError(
         "[RDS.6] Enhanced monitoring should be configured for RDS DB instances and clusters"
       );
@@ -141,10 +166,22 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
    * [RDS.8] RDS DB instances should have deletion protection enabled
    * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-8
    */
-  private checkDeletionProtection(node: CfnDBInstance) {
-    if (!node.deletionProtection) {
+  private checkDeletionProtection(node: RDSInstance) {
+    if (node instanceof CfnDBCluster && !node.deletionProtection) {
       Annotations.of(node).addError(
-        "[RDS.8] RDS DB instances should have deletion protection enabled"
+        `[RDS.8] RDS DB ${getDescriptor(
+          node
+        )} should have deletion protection enabled`
+      );
+    } else if (
+      node instanceof CfnDBInstance &&
+      node.dbClusterIdentifier === undefined &&
+      !node.deletionProtection
+    ) {
+      Annotations.of(node).addError(
+        `[RDS.8] RDS DB ${getDescriptor(
+          node
+        )} should have deletion protection enabled`
       );
     }
   }

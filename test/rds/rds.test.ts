@@ -1,5 +1,6 @@
 import { App, Aspects, Stack } from "@aws-cdk/core";
 import { AWSFoundationalSecurityBestPracticesChecker } from "../../src/aws-foundational-security-best-practices";
+import { RdsClusterBuilder } from "./RdsClusterBuilder";
 import { RdsInstanceBuilder } from "./RdsInstanceBuilder";
 
 describe("RDS", () => {
@@ -213,6 +214,61 @@ describe("RDS", () => {
       // Arrange
       const stack = new Stack(app, "test-rds-6-stack-ignore-pass", {});
       new RdsInstanceBuilder(stack).withMonitoringInterval(0).build();
+      Aspects.of(app).add(
+        new AWSFoundationalSecurityBestPracticesChecker({
+          rds: { enhancedMonitoring: false },
+        })
+      );
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-6-stack-ignore-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+
+    test("Given an RDS Cluster that is configured with enhanced monitoring, When synth is run, Then synth should pass", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-6-stack-pass", {
+        env: { account: "1", region: "ap-southeast-2" },
+      });
+      new RdsClusterBuilder(stack).withMonitoringInterval(60).build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-6-stack-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+
+    test("Given an RDS Cluster that is configured without enhanced monitoring, When synth is run, Then synth should fail", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-6-stack-fail", {});
+      new RdsClusterBuilder(stack).withMonitoringInterval(0).build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-6-stack-fail").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(2); // A Cluster spins up two Instances.
+      expect(synthMessages[0].level).toBe("error");
+      expect(synthMessages[0].entry.data).toBe(
+        "[RDS.6] Enhanced monitoring should be configured for RDS DB instances and clusters"
+      );
+    });
+
+    test("Given an RDS Cluster that is configured without enhanced monitoring and RDS.6 is ignored, When synth is run, Then synth should pass", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-6-stack-ignore-pass", {});
+      new RdsClusterBuilder(stack).withMonitoringInterval(0).build();
       Aspects.of(app).add(
         new AWSFoundationalSecurityBestPracticesChecker({
           rds: { enhancedMonitoring: false },
