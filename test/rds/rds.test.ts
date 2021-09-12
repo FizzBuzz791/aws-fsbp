@@ -1,3 +1,11 @@
+import {
+  DatabaseInstanceEngine,
+  MariaDbEngineVersion,
+  MysqlEngineVersion,
+  OracleEngineVersion,
+  PostgresEngineVersion,
+  SqlServerEngineVersion,
+} from "@aws-cdk/aws-rds";
 import { App, Aspects, Stack } from "@aws-cdk/core";
 import { AWSFoundationalSecurityBestPracticesChecker } from "../../src/aws-foundational-security-best-practices";
 import { RdsClusterBuilder } from "./RdsClusterBuilder";
@@ -334,6 +342,372 @@ describe("RDS", () => {
       const synthMessages = app
         .synth({ validateOnSynthesis: true, force: true })
         .getStackByName("test-rds-8-stack-ignore-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+  });
+
+  describe("[RDS.9] Database logging should be enabled", () => {
+    test("Given an RDS Instance with a MySQL Engine and Log Exports enabled, When synth is run, Then synth should pass", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-9-stack-pass", {});
+      new RdsInstanceBuilder(stack)
+        .withEngine(
+          DatabaseInstanceEngine.mysql({ version: MysqlEngineVersion.VER_5_7 })
+        )
+        .withLogExports(["audit", "error", "general", "slowquery"])
+        .build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-9-stack-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+
+    test("Given an RDS Instance with a MySQL Engine and no Log Exports, When synth is run, Then synth should fail", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-9-stack-fail", {});
+      new RdsInstanceBuilder(stack)
+        .withEngine(
+          DatabaseInstanceEngine.mysql({ version: MysqlEngineVersion.VER_5_7 })
+        )
+        .withLogExports([])
+        .build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-9-stack-fail").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(1);
+      expect(synthMessages[0].level).toBe("error");
+      expect(synthMessages[0].entry.data).toBe(
+        "[RDS.9] Database logging should be enabled"
+      );
+    });
+
+    test("Given an RDS Instance with a MySQL Engine and no Log Exports and RDS.9 is ignored, When synth is run, Then synth should fail", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-9-stack-ignore-pass", {});
+      new RdsInstanceBuilder(stack)
+        .withEngine(
+          DatabaseInstanceEngine.mysql({ version: MysqlEngineVersion.VER_5_7 })
+        )
+        .withLogExports([])
+        .build();
+      Aspects.of(app).add(
+        new AWSFoundationalSecurityBestPracticesChecker({
+          rds: { logExports: false },
+        })
+      );
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-9-stack-ignore-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+
+    test("Given an RDS Instance with a MariaDB Engine and Log Exports enabled, When synth is run, Then synth should pass", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-9-stack-pass", {});
+      new RdsInstanceBuilder(stack)
+        .withEngine(
+          DatabaseInstanceEngine.mariaDb({
+            version: MariaDbEngineVersion.VER_10_2,
+          })
+        )
+        .withLogExports(["audit", "error", "general", "slowquery"])
+        .build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-9-stack-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+
+    test("Given an RDS Instance with a MariaDB Engine and no Log Exports, When synth is run, Then synth should fail", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-9-stack-fail", {});
+      new RdsInstanceBuilder(stack)
+        .withEngine(
+          DatabaseInstanceEngine.mariaDb({
+            version: MariaDbEngineVersion.VER_10_2,
+          })
+        )
+        .withLogExports([])
+        .build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-9-stack-fail").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(1);
+      expect(synthMessages[0].level).toBe("error");
+      expect(synthMessages[0].entry.data).toBe(
+        "[RDS.9] Database logging should be enabled"
+      );
+    });
+
+    test("Given an RDS Instance with a MariaDB Engine and no Log Exports and RDS.9 is ignored, When synth is run, Then synth should fail", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-9-stack-ignore-pass", {});
+      new RdsInstanceBuilder(stack)
+        .withEngine(
+          DatabaseInstanceEngine.mariaDb({
+            version: MariaDbEngineVersion.VER_10_2,
+          })
+        )
+        .withLogExports([])
+        .build();
+      Aspects.of(app).add(
+        new AWSFoundationalSecurityBestPracticesChecker({
+          rds: { logExports: false },
+        })
+      );
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-9-stack-ignore-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+
+    test("Given an RDS Instance with a Oracle Engine and Log Exports enabled, When synth is run, Then synth should pass", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-9-stack-pass", {});
+      new RdsInstanceBuilder(stack)
+        .withEngine(
+          DatabaseInstanceEngine.oracleEe({
+            version: OracleEngineVersion.VER_12_1,
+          })
+        )
+        .withLogExports(["alert", "audit", "trace", "listener"])
+        .build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-9-stack-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+
+    test("Given an RDS Instance with a Oracle Engine and no Log Exports, When synth is run, Then synth should fail", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-9-stack-fail", {});
+      new RdsInstanceBuilder(stack)
+        .withEngine(
+          DatabaseInstanceEngine.oracleEe({
+            version: OracleEngineVersion.VER_12_1,
+          })
+        )
+        .withLogExports([])
+        .build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-9-stack-fail").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(1);
+      expect(synthMessages[0].level).toBe("error");
+      expect(synthMessages[0].entry.data).toBe(
+        "[RDS.9] Database logging should be enabled"
+      );
+    });
+
+    test("Given an RDS Instance with a Oracle Engine and no Log Exports and RDS.9 is ignored, When synth is run, Then synth should fail", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-9-stack-ignore-pass", {});
+      new RdsInstanceBuilder(stack)
+        .withEngine(
+          DatabaseInstanceEngine.oracleEe({
+            version: OracleEngineVersion.VER_12_1,
+          })
+        )
+        .withLogExports([])
+        .build();
+      Aspects.of(app).add(
+        new AWSFoundationalSecurityBestPracticesChecker({
+          rds: { logExports: false },
+        })
+      );
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-9-stack-ignore-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+
+    test("Given an RDS Instance with a PostgreSQL Engine and Log Exports enabled, When synth is run, Then synth should pass", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-9-stack-pass", {});
+      new RdsInstanceBuilder(stack)
+        .withEngine(
+          DatabaseInstanceEngine.postgres({
+            version: PostgresEngineVersion.VER_10,
+          })
+        )
+        .withLogExports(["postgresql", "upgrade"])
+        .build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-9-stack-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+
+    test("Given an RDS Instance with a PostgreSQL Engine and no Log Exports, When synth is run, Then synth should fail", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-9-stack-fail", {});
+      new RdsInstanceBuilder(stack)
+        .withEngine(
+          DatabaseInstanceEngine.postgres({
+            version: PostgresEngineVersion.VER_10,
+          })
+        )
+        .withLogExports([])
+        .build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-9-stack-fail").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(1);
+      expect(synthMessages[0].level).toBe("error");
+      expect(synthMessages[0].entry.data).toBe(
+        "[RDS.9] Database logging should be enabled"
+      );
+    });
+
+    test("Given an RDS Instance with a PostgreSQL Engine and no Log Exports and RDS.9 is ignored, When synth is run, Then synth should fail", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-9-stack-ignore-pass", {});
+      new RdsInstanceBuilder(stack)
+        .withEngine(
+          DatabaseInstanceEngine.postgres({
+            version: PostgresEngineVersion.VER_10,
+          })
+        )
+        .withLogExports([])
+        .build();
+      Aspects.of(app).add(
+        new AWSFoundationalSecurityBestPracticesChecker({
+          rds: { logExports: false },
+        })
+      );
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-9-stack-ignore-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+
+    test("Given an RDS Instance with a SQL Server Engine and Log Exports enabled, When synth is run, Then synth should pass", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-9-stack-pass", {});
+      new RdsInstanceBuilder(stack)
+        .withEngine(
+          DatabaseInstanceEngine.sqlServerEe({
+            version: SqlServerEngineVersion.VER_11,
+          })
+        )
+        .withLogExports(["error", "agent"])
+        .build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-9-stack-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+
+    test("Given an RDS Instance with a SQL Server Engine and no Log Exports, When synth is run, Then synth should fail", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-9-stack-fail", {});
+      new RdsInstanceBuilder(stack)
+        .withEngine(
+          DatabaseInstanceEngine.sqlServerEe({
+            version: SqlServerEngineVersion.VER_11,
+          })
+        )
+        .withLogExports([])
+        .build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-9-stack-fail").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(1);
+      expect(synthMessages[0].level).toBe("error");
+      expect(synthMessages[0].entry.data).toBe(
+        "[RDS.9] Database logging should be enabled"
+      );
+    });
+
+    test("Given an RDS Instance with a SQL Server Engine and no Log Exports and RDS.9 is ignored, When synth is run, Then synth should fail", () => {
+      // Arrange
+      const stack = new Stack(app, "test-rds-9-stack-ignore-pass", {});
+      new RdsInstanceBuilder(stack)
+        .withEngine(
+          DatabaseInstanceEngine.sqlServerEe({
+            version: SqlServerEngineVersion.VER_11,
+          })
+        )
+        .withLogExports([])
+        .build();
+      Aspects.of(app).add(
+        new AWSFoundationalSecurityBestPracticesChecker({
+          rds: { logExports: false },
+        })
+      );
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-rds-9-stack-ignore-pass").messages;
 
       // Assert
       expect(synthMessages.length).toBe(0);

@@ -29,9 +29,10 @@ export class RdsClusterBuilder implements IBuilder<DatabaseCluster> {
       instanceProps: {
         vpc: new Vpc(this._stack, "vpc", {}),
       },
-      storageEncrypted: true, // RDS.3
-      monitoringInterval: Duration.seconds(this._monitoringInterval), // RDS.6
-      deletionProtection: true, // RDS.8
+      storageEncrypted: true, // RDS.3 - TODO: Add test coverage
+      monitoringInterval: Duration.seconds(this._monitoringInterval), // RDS.6 - TODO: Add test coverage
+      deletionProtection: true, // RDS.8 - TODO: Add test coverage
+      cloudwatchLogsExports: ["audit", "error", "general", "slowquery"], // RDS.9 - TODO: Add test coverage
     });
   }
 }

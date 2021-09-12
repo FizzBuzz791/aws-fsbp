@@ -2,7 +2,10 @@ import { Vpc } from "@aws-cdk/aws-ec2";
 import {
   DatabaseInstance,
   DatabaseInstanceEngine,
+  IInstanceEngine,
+  IParameterGroup,
   MysqlEngineVersion,
+  ParameterGroup,
 } from "@aws-cdk/aws-rds";
 import { Duration, Stack } from "@aws-cdk/core";
 import { IBuilder } from "../IBuilder";
@@ -15,9 +18,18 @@ export class RdsInstanceBuilder implements IBuilder<DatabaseInstance> {
   private _multiAz: boolean = true;
   private _monitoringInterval: number = 60;
   private _deletionProtection: boolean = true;
+  private _engine: IInstanceEngine = DatabaseInstanceEngine.mysql({
+    version: MysqlEngineVersion.VER_5_7,
+  });
+  private _logExports: string[] = ["audit", "error", "general", "slowquery"];
+  private _parameterGroup: IParameterGroup;
 
   constructor(stack: Stack) {
     this._stack = stack;
+
+    this._parameterGroup = new ParameterGroup(this._stack, "parameterGroup", {
+      engine: this._engine,
+    });
   }
 
   withPublicAccess(publiclyAccessible: boolean): IBuilder<DatabaseInstance> {
@@ -47,17 +59,44 @@ export class RdsInstanceBuilder implements IBuilder<DatabaseInstance> {
     return this;
   }
 
+  withEngine(engine: IInstanceEngine) {
+    this._engine = engine;
+    this._parameterGroup = new ParameterGroup(
+      this._stack,
+      `parameterGroup-${this._engine.engineType}`,
+      {
+        engine: this._engine,
+      }
+    );
+    return this;
+  }
+
+  withLogExports(logExports: string[]) {
+    this._logExports = logExports;
+
+    // TODO: Testing this is set correctly.
+    switch (this._engine.engineType) {
+      case "mysql":
+        this._parameterGroup.addParameter("general_log", "1");
+        this._parameterGroup.addParameter("slow_query_log", "1");
+        this._parameterGroup.addParameter("log_output", "FILE");
+        break;
+    }
+
+    return this;
+  }
+
   build(): DatabaseInstance {
     return new DatabaseInstance(this._stack, "RdsInstance", {
-      engine: DatabaseInstanceEngine.mysql({
-        version: MysqlEngineVersion.VER_5_7,
-      }),
+      engine: this._engine,
       vpc: new Vpc(this._stack, "vpc", {}),
       publiclyAccessible: this._publiclyAccessible,
       storageEncrypted: this._storageEncrypted,
       multiAz: this._multiAz,
       monitoringInterval: Duration.seconds(this._monitoringInterval),
       deletionProtection: this._deletionProtection,
+      cloudwatchLogsExports: this._logExports,
+      parameterGroup: this._parameterGroup,
     });
   }
 }

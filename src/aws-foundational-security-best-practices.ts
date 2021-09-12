@@ -17,12 +17,13 @@ export interface FSBPConfig {
     multiAz?: boolean;
     enhancedMonitoring?: boolean;
     deletionProtection?: boolean;
+    logExports?: boolean;
   };
 }
 
-type RDSInstance = CfnDBInstance | CfnDBCluster;
+type RDS = CfnDBInstance | CfnDBCluster;
 
-const getDescriptor = (node: RDSInstance): string => {
+const getDescriptor = (node: RDS): string => {
   return node instanceof CfnDBInstance ? "instances" : "cluster";
 };
 
@@ -46,6 +47,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
         multiAz: true,
         enhancedMonitoring: true,
         deletionProtection: true,
+        logExports: true,
       },
     }
   ) {
@@ -58,11 +60,11 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
     } else if (node instanceof CfnFunction) {
       this.checkLamdaCompliance(node);
     } else if (node instanceof CfnDBInstance || node instanceof CfnDBCluster) {
-      this.checkDBInstanceCompliance(node);
+      this.checkRDSCompliance(node);
     }
   }
 
-  private checkDBInstanceCompliance(node: RDSInstance) {
+  private checkRDSCompliance(node: RDS) {
     this.checkSnapshotPublicAccess(node);
 
     if (this.Config.rds?.publicAccess ?? true) {
@@ -84,13 +86,17 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
     if (this.Config.rds?.deletionProtection ?? true) {
       this.checkDeletionProtection(node);
     }
+
+    if (this.Config.rds?.logExports ?? true) {
+      this.checkLogExports(node);
+    }
   }
 
   /**
    * [RDS.1] RDS snapshots should be private
    * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-1
    */
-  private checkSnapshotPublicAccess(node: RDSInstance) {
+  private checkSnapshotPublicAccess(node: RDS) {
     // TODO: This is complicated...
   }
 
@@ -98,7 +104,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
    * [RDS.2] RDS DB instances should prohibit public access, determined by the PubliclyAccessible configuration
    * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-2
    */
-  private checkRDSPublicAccess(node: RDSInstance) {
+  private checkRDSPublicAccess(node: RDS) {
     // This check is only applicable to DB Instances.
     if (node instanceof CfnDBInstance && node.publiclyAccessible) {
       // Undefined is the same as false in this context, so we don't need to check or raise an error.
@@ -112,7 +118,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
    * [RDS.3] RDS DB instances should have encryption at rest enabled
    * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-3
    */
-  private checkRDSEncryption(node: RDSInstance) {
+  private checkRDSEncryption(node: RDS) {
     // This check is only applicable to instances, not clusters.
     if (
       node instanceof CfnDBInstance &&
@@ -131,7 +137,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
    * [RDS.5] RDS DB instances should be configured with multiple Availability Zones
    * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-5
    */
-  private checkMultipleAZs(node: RDSInstance) {
+  private checkMultipleAZs(node: RDS) {
     // This check is only applicable to instances, not clusters.
     if (
       node instanceof CfnDBInstance &&
@@ -150,7 +156,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
    * [RDS.6] Enhanced monitoring should be configured for RDS DB instances and clusters
    * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-6
    */
-  private checkEnhancedMonitoring(node: RDSInstance) {
+  private checkEnhancedMonitoring(node: RDS) {
     if (
       node instanceof CfnDBInstance &&
       (!node.monitoringInterval || node.monitoringInterval < 1)
@@ -166,7 +172,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
    * [RDS.8] RDS DB instances should have deletion protection enabled
    * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-8
    */
-  private checkDeletionProtection(node: RDSInstance) {
+  private checkDeletionProtection(node: RDS) {
     if (node instanceof CfnDBCluster && !node.deletionProtection) {
       Annotations.of(node).addError(
         `[RDS.8] RDS DB ${getDescriptor(
@@ -183,6 +189,64 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
           node
         )} should have deletion protection enabled`
       );
+    }
+  }
+
+  /**
+   * [RDS.9] Database logging should be enabled
+   * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-9
+   */
+  private checkLogExports(node: RDS) {
+    if (
+      node instanceof CfnDBCluster ||
+      (node instanceof CfnDBInstance && node.dbClusterIdentifier === undefined)
+    ) {
+      if (
+        node.enableCloudwatchLogsExports === undefined ||
+        node.enableCloudwatchLogsExports.length === 0
+      ) {
+        Annotations.of(node).addError(
+          "[RDS.9] Database logging should be enabled"
+        );
+      } else {
+        // Check that the log types are valid.
+        let expectedLogTypes: string[] = [];
+        switch (node.engine) {
+          case "mysql":
+          case "aurora":
+          case "aurora-mysql":
+          case "mariadb":
+            expectedLogTypes = ["audit", "error", "general", "slowquery"];
+            break;
+          case "oracle-ee":
+          case "oracle-se2":
+            expectedLogTypes = ["alert", "audit", "trace", "listener"];
+            break;
+          case "postgres":
+          case "aurora-postgres":
+            expectedLogTypes = ["postgresql", "upgrade"];
+            break;
+          case "sqlserver-ee":
+          case "sqlserver-ex":
+          case "sqlserver-se":
+          case "sqlserver-web":
+            expectedLogTypes = ["error", "agent"];
+            break;
+          default:
+            expectedLogTypes = ["invalid"];
+            break;
+        }
+
+        if (
+          !node.enableCloudwatchLogsExports.every((log) =>
+            expectedLogTypes.includes(log)
+          )
+        ) {
+          Annotations.of(node).addError(
+            "[RDS.9] Database logging should be enabled"
+          );
+        }
+      }
     }
   }
 
