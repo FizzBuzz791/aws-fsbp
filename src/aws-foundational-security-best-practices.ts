@@ -18,6 +18,7 @@ export interface FSBPConfig {
     enhancedMonitoring?: boolean;
     deletionProtection?: boolean;
     logExports?: boolean;
+    iamAuth?: boolean;
   };
 }
 
@@ -48,6 +49,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
         enhancedMonitoring: true,
         deletionProtection: true,
         logExports: true,
+        iamAuth: true,
       },
     }
   ) {
@@ -89,6 +91,10 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
 
     if (this.Config.rds?.logExports ?? true) {
       this.checkLogExports(node);
+    }
+
+    if (this.Config.rds?.iamAuth ?? true) {
+      this.checkIAMAuthentication(node);
     }
   }
 
@@ -247,6 +253,29 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
           );
         }
       }
+    }
+  }
+
+  /**
+   * [RDS.10] IAM authentication should be configured for RDS instances & [RDS.12] IAM authentication should be configured for RDS clusters
+   * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-10 & https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-12
+   */
+  private checkIAMAuthentication(node: RDS) {
+    if (
+      node instanceof CfnDBInstance &&
+      node.dbClusterIdentifier === undefined &&
+      !node.enableIamDatabaseAuthentication
+    ) {
+      Annotations.of(node).addError(
+        "[RDS.10] IAM authentication should be configured for RDS instances"
+      );
+    } else if (
+      node instanceof CfnDBCluster &&
+      !node.enableIamDatabaseAuthentication
+    ) {
+      Annotations.of(node).addError(
+        "[RDS.12] IAM authentication should be configured for RDS clusters"
+      );
     }
   }
 

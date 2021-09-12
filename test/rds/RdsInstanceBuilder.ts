@@ -23,6 +23,7 @@ export class RdsInstanceBuilder implements IBuilder<DatabaseInstance> {
   });
   private _logExports: string[] = ["audit", "error", "general", "slowquery"];
   private _parameterGroup: IParameterGroup;
+  private _iamAuthentication: boolean = true;
 
   constructor(stack: Stack) {
     this._stack = stack;
@@ -86,6 +87,11 @@ export class RdsInstanceBuilder implements IBuilder<DatabaseInstance> {
     return this;
   }
 
+  withIAMAuthentication(iamAuthentication: boolean) {
+    this._iamAuthentication = iamAuthentication;
+    return this;
+  }
+
   build(): DatabaseInstance {
     return new DatabaseInstance(this._stack, "RdsInstance", {
       engine: this._engine,
@@ -97,6 +103,7 @@ export class RdsInstanceBuilder implements IBuilder<DatabaseInstance> {
       deletionProtection: this._deletionProtection,
       cloudwatchLogsExports: this._logExports,
       parameterGroup: this._parameterGroup,
+      iamAuthentication: this._iamAuthentication,
     });
   }
 }

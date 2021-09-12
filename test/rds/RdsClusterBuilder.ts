@@ -33,6 +33,7 @@ export class RdsClusterBuilder implements IBuilder<DatabaseCluster> {
       monitoringInterval: Duration.seconds(this._monitoringInterval), // RDS.6 - TODO: Add test coverage
       deletionProtection: true, // RDS.8 - TODO: Add test coverage
       cloudwatchLogsExports: ["audit", "error", "general", "slowquery"], // RDS.9 - TODO: Add test coverage
+      iamAuthentication: true, // RDS.10 - TODO: Add test coverage
     });
   }
 }
