@@ -105,6 +105,7 @@ export class RdsInstanceBuilder implements IBuilder<DatabaseInstance> {
       parameterGroup: this._parameterGroup,
       iamAuthentication: this._iamAuthentication,
       autoMinorVersionUpgrade: true, // RDS.13 - TODO: Add test coverage
+      copyTagsToSnapshot: true, // RDS.16 - TODO: Add test coverage
     });
   }
 }

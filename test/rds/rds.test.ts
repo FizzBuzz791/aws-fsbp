@@ -653,11 +653,9 @@ describe("RDS", () => {
       Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
 
       // Act
-      const synthApp = app
+      const synthMessages = app
         .synth({ validateOnSynthesis: true, force: true })
-        .getStackByName("test-rds-9-stack-pass");
-      console.log(JSON.stringify(synthApp.template));
-      const synthMessages = synthApp.messages;
+        .getStackByName("test-rds-9-stack-pass").messages;
 
       // Assert
       expect(synthMessages.length).toBe(0);

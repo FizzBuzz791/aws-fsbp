@@ -20,6 +20,7 @@ export interface FSBPConfig {
     logExports?: boolean;
     iamAuth?: boolean;
     autoMinorVersionUpgrades?: boolean;
+    copyTagsToSnapshot?: boolean;
   };
 }
 
@@ -52,6 +53,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
         logExports: true,
         iamAuth: true,
         autoMinorVersionUpgrades: true,
+        copyTagsToSnapshot: true,
       },
     }
   ) {
@@ -101,6 +103,10 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
 
     if (this.Config.rds?.autoMinorVersionUpgrades ?? true) {
       this.checkMinorVersionUpgrades(node);
+    }
+
+    if (this.Config.rds?.copyTagsToSnapshot ?? true) {
+      this.checkCopyTagsToSnapshot(node);
     }
   }
 
@@ -294,6 +300,27 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
       Annotations.of(node).addError(
         "[RDS.13] RDS automatic minor version upgrades should be enabled"
       );
+    }
+  }
+
+  /**
+   * [RDS.16] RDS DB clusters should be configured to copy tags to snapshots & [RDS.17] RDS DB instances should be configured to copy tags to snapshots
+   * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-16 & https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-17
+   */
+  private checkCopyTagsToSnapshot(node: RDS) {
+    if (!node.copyTagsToSnapshot) {
+      if (node instanceof CfnDBCluster) {
+        Annotations.of(node).addWarning(
+          "[RDS.16] RDS DB clusters should be configured to copy tags to snapshots"
+        );
+      } else if (
+        node instanceof CfnDBInstance &&
+        node.dbClusterIdentifier === undefined
+      ) {
+        Annotations.of(node).addWarning(
+          "[RDS.17] RDS DB instances should be configured to copy tags to snapshots"
+        );
+      }
     }
   }
 

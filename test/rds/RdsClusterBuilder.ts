@@ -35,6 +35,7 @@ export class RdsClusterBuilder implements IBuilder<DatabaseCluster> {
       deletionProtection: true, // RDS.8 - TODO: Add test coverage
       cloudwatchLogsExports: ["audit", "error", "general", "slowquery"], // RDS.9 - TODO: Add test coverage
       iamAuthentication: true, // RDS.10 - TODO: Add test coverage
+      copyTagsToSnapshot: true, // RDS.16 - TODO: Add test coverage
     });
   }
 }
