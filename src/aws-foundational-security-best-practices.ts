@@ -19,6 +19,7 @@ export interface FSBPConfig {
     deletionProtection?: boolean;
     logExports?: boolean;
     iamAuth?: boolean;
+    autoMinorVersionUpgrades?: boolean;
   };
 }
 
@@ -50,6 +51,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
         deletionProtection: true,
         logExports: true,
         iamAuth: true,
+        autoMinorVersionUpgrades: true,
       },
     }
   ) {
@@ -95,6 +97,10 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
 
     if (this.Config.rds?.iamAuth ?? true) {
       this.checkIAMAuthentication(node);
+    }
+
+    if (this.Config.rds?.autoMinorVersionUpgrades ?? true) {
+      this.checkMinorVersionUpgrades(node);
     }
   }
 
@@ -275,6 +281,18 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
     ) {
       Annotations.of(node).addError(
         "[RDS.12] IAM authentication should be configured for RDS clusters"
+      );
+    }
+  }
+
+  /**
+   * [RDS.13] RDS automatic minor version upgrades should be enabled
+   * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-rds-13
+   */
+  private checkMinorVersionUpgrades(node: RDS) {
+    if (node instanceof CfnDBInstance && !node.autoMinorVersionUpgrade) {
+      Annotations.of(node).addError(
+        "[RDS.13] RDS automatic minor version upgrades should be enabled"
       );
     }
   }

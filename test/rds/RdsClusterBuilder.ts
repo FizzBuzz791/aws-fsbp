@@ -28,6 +28,7 @@ export class RdsClusterBuilder implements IBuilder<DatabaseCluster> {
       }),
       instanceProps: {
         vpc: new Vpc(this._stack, "vpc", {}),
+        autoMinorVersionUpgrade: true, // RDS.13 - TODO: Add test coverage
       },
       storageEncrypted: true, // RDS.3 - TODO: Add test coverage
       monitoringInterval: Duration.seconds(this._monitoringInterval), // RDS.6 - TODO: Add test coverage

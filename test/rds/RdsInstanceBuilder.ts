@@ -104,6 +104,7 @@ export class RdsInstanceBuilder implements IBuilder<DatabaseInstance> {
       cloudwatchLogsExports: this._logExports,
       parameterGroup: this._parameterGroup,
       iamAuthentication: this._iamAuthentication,
+      autoMinorVersionUpgrade: true, // RDS.13 - TODO: Add test coverage
     });
   }
 }
