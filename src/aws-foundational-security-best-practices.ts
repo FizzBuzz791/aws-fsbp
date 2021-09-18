@@ -64,7 +64,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
     if (node instanceof CfnPolicy) {
       this.checkIAMPolicyCompliance(node);
     } else if (node instanceof CfnFunction) {
-      this.checkLamdaCompliance(node);
+      this.checkLambdaCompliance(node);
     } else if (node instanceof CfnDBInstance || node instanceof CfnDBCluster) {
       this.checkRDSCompliance(node);
     }
@@ -324,7 +324,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
     }
   }
 
-  private checkLamdaCompliance(node: CfnFunction) {
+  private checkLambdaCompliance(node: CfnFunction) {
     this.checkLambdaPublicAccess(node);
 
     if (this.Config.lambda?.supportedRuntimes ?? true) {
