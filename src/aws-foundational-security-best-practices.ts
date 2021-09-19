@@ -2,6 +2,7 @@ import { Annotations, IAspect, IConstruct } from "@aws-cdk/core";
 import { CfnPolicy, Effect } from "@aws-cdk/aws-iam";
 import { CfnFunction, Runtime } from "@aws-cdk/aws-lambda";
 import { CfnDBCluster, CfnDBInstance } from "@aws-cdk/aws-rds";
+import { CfnTable, Table } from "@aws-cdk/aws-dynamodb";
 
 export interface FSBPConfig {
   iam?: {
@@ -21,6 +22,9 @@ export interface FSBPConfig {
     iamAuth?: boolean;
     autoMinorVersionUpgrades?: boolean;
     copyTagsToSnapshot?: boolean;
+  };
+  dynamodb?: {
+    autoScaling?: boolean;
   };
 }
 
@@ -55,6 +59,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
         autoMinorVersionUpgrades: true,
         copyTagsToSnapshot: true,
       },
+      dynamodb: { autoScaling: true },
     }
   ) {
     this.Config = config;
@@ -67,6 +72,8 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
       this.checkLambdaCompliance(node);
     } else if (node instanceof CfnDBInstance || node instanceof CfnDBCluster) {
       this.checkRDSCompliance(node);
+    } else if (node instanceof CfnTable) {
+      this.checkDynamoDBCompliance(node);
     }
   }
 
@@ -418,6 +425,39 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
       ) {
         Annotations.of(node).addError(
           "[IAM.21] IAM customer managed policies that you create should not allow wildcard actions for services."
+        );
+      }
+    }
+  }
+
+  private checkDynamoDBCompliance(node: CfnTable) {
+    if (this.Config.dynamodb?.autoScaling ?? true) {
+      this.checkAutoScaling(node);
+    }
+  }
+
+  /**
+   * [DynamoDB.1] DynamoDB tables should automatically scale capacity with demand
+   */
+  private checkAutoScaling(node: CfnTable) {
+    // Look for ScalableTableAttribute or ScalableTarget
+    if (node.node.scope instanceof Table) {
+      const table = node.node.scope;
+      if (table.hasOwnProperty("tableScaling")) {
+        const tableScaling = table["tableScaling"];
+        if (
+          !tableScaling.hasOwnProperty("scalableReadAttribute") ||
+          !tableScaling.hasOwnProperty("scalableWriteAttribute")
+        ) {
+          // If it's missing a scalable attribute, it's not a scalable table.
+          Annotations.of(node).addError(
+            "[DynamoDB.1] DynamoDB tables should automatically scale capacity with demand"
+          );
+        }
+      } else {
+        // If it's missing tableScaling, it's not a scalable table.
+        Annotations.of(node).addError(
+          "[DynamoDB.1] DynamoDB tables should automatically scale capacity with demand"
         );
       }
     }
