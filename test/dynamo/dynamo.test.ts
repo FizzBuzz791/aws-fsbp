@@ -84,12 +84,6 @@ describe("DynamoDB", () => {
         .withAutoScaleReadCapacity(10, 20)
         .withAutoScaleWriteCapacity(10, 20)
         .build();
-      const table = new Table(stack, "test-dynamo-1-table", {
-        tableName: "test-dynamo-1-table",
-        partitionKey: { name: "PK", type: AttributeType.STRING },
-      });
-      table.autoScaleReadCapacity({ minCapacity: 10, maxCapacity: 20 });
-      table.autoScaleWriteCapacity({ minCapacity: 10, maxCapacity: 20 });
       Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
 
       // Act
@@ -118,6 +112,61 @@ describe("DynamoDB", () => {
       const synthMessages = app
         .synth({ validateOnSynthesis: true, force: true })
         .getStackByName("test-dynamo-1-stack-ignore-fail").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+  });
+
+  describe("[DynamoDB.2] DynamoDB tables should have point-in-time recovery enabled", () => {
+    test("Given a Dynamo DB table without point-in-time recovery enabled, When synth is run, Then synth should fail.", () => {
+      // Arrange
+      const stack = new Stack(app, "test-dynamo-2-stack-fail", {});
+      new DynamoDbBuilder(stack).withPointInTimeRecovery(false).build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-dynamo-2-stack-fail").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(1);
+      expect(synthMessages[0].level).toBe("error");
+      expect(synthMessages[0].entry.data).toBe(
+        "[DynamoDB.2] DynamoDB tables should have point-in-time recovery enabled"
+      );
+    });
+
+    test("Given a Dynamo DB table with point-in-time recovery enabled, When synth is run, Then synth should pass.", () => {
+      // Arrange
+      const stack = new Stack(app, "test-dynamo-2-stack-pass", {});
+      new DynamoDbBuilder(stack).withPointInTimeRecovery(true).build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-dynamo-2-stack-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+
+    test("Given a Dynamo DB table without point-in-time recovery enabled and DynamoDB.2 is ignored, When synth is run, Then synth should pass.", () => {
+      // Arrange
+      const stack = new Stack(app, "test-dynamo-2-stack-pass", {});
+      new DynamoDbBuilder(stack).withPointInTimeRecovery(false).build();
+      Aspects.of(app).add(
+        new AWSFoundationalSecurityBestPracticesChecker({
+          dynamodb: { pointInTimeRecovery: false },
+        })
+      );
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-dynamo-2-stack-pass").messages;
 
       // Assert
       expect(synthMessages.length).toBe(0);

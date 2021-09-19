@@ -1,4 +1,9 @@
-import { Annotations, IAspect, IConstruct } from "@aws-cdk/core";
+import {
+  Annotations,
+  IAspect,
+  IConstruct,
+  isResolvableObject,
+} from "@aws-cdk/core";
 import { CfnPolicy, Effect } from "@aws-cdk/aws-iam";
 import { CfnFunction, Runtime } from "@aws-cdk/aws-lambda";
 import { CfnDBCluster, CfnDBInstance } from "@aws-cdk/aws-rds";
@@ -25,6 +30,7 @@ export interface FSBPConfig {
   };
   dynamodb?: {
     autoScaling?: boolean;
+    pointInTimeRecovery?: boolean;
   };
 }
 
@@ -59,7 +65,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
         autoMinorVersionUpgrades: true,
         copyTagsToSnapshot: true,
       },
-      dynamodb: { autoScaling: true },
+      dynamodb: { autoScaling: true, pointInTimeRecovery: true },
     }
   ) {
     this.Config = config;
@@ -434,6 +440,10 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
     if (this.Config.dynamodb?.autoScaling ?? true) {
       this.checkAutoScaling(node);
     }
+
+    if (this.Config.dynamodb?.pointInTimeRecovery ?? true) {
+      this.checkPointInTimeRecovery(node);
+    }
   }
 
   /**
@@ -458,6 +468,29 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
         // If it's missing tableScaling, it's not a scalable table.
         Annotations.of(node).addError(
           "[DynamoDB.1] DynamoDB tables should automatically scale capacity with demand"
+        );
+      }
+    }
+  }
+
+  /**
+   * [DynamoDB.2] DynamoDB tables should have point-in-time recovery enabled
+   * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-dynamodb-2
+   */
+  private checkPointInTimeRecovery(node: CfnTable) {
+    if (!node.pointInTimeRecoverySpecification) {
+      // Nothing explicit about PITR being on or off, raise an error.
+      Annotations.of(node).addError(
+        "[DynamoDB.2] DynamoDB tables should have point-in-time recovery enabled"
+      );
+    } else {
+      if (
+        !isResolvableObject(node.pointInTimeRecoverySpecification) &&
+        !node.pointInTimeRecoverySpecification.pointInTimeRecoveryEnabled
+      ) {
+        // PITR is explicitly off, raise an error.
+        Annotations.of(node).addError(
+          "[DynamoDB.2] DynamoDB tables should have point-in-time recovery enabled"
         );
       }
     }

@@ -9,6 +9,7 @@ export class DynamoDbBuilder implements IBuilder<Table> {
   private _autoScaleWriteCapacityMax: number = 20;
   private _autoScaleReadCapacityMin: number = 10;
   private _autoScaleReadCapacityMax: number = 20;
+  private _pointInTimeRecovery: boolean = true;
 
   constructor(stack: Stack) {
     this._stack = stack;
@@ -26,9 +27,15 @@ export class DynamoDbBuilder implements IBuilder<Table> {
     return this;
   }
 
+  withPointInTimeRecovery(pointInTimeRecovery: boolean): DynamoDbBuilder {
+    this._pointInTimeRecovery = pointInTimeRecovery;
+    return this;
+  }
+
   build(): Table {
     const table = new Table(this._stack, "test-dynamo-table", {
       partitionKey: { name: "", type: AttributeType.STRING },
+      pointInTimeRecovery: this._pointInTimeRecovery,
     });
 
     if (
