@@ -448,6 +448,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
 
   /**
    * [DynamoDB.1] DynamoDB tables should automatically scale capacity with demand
+   * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-dynamodb-1
    */
   private checkAutoScaling(node: CfnTable) {
     // Look for ScalableTableAttribute or ScalableTarget
