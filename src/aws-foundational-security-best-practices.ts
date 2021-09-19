@@ -1,7 +1,13 @@
-import { Annotations, IAspect, IConstruct } from "@aws-cdk/core";
+import {
+  Annotations,
+  IAspect,
+  IConstruct,
+  isResolvableObject,
+} from "@aws-cdk/core";
 import { CfnPolicy, Effect } from "@aws-cdk/aws-iam";
 import { CfnFunction, Runtime } from "@aws-cdk/aws-lambda";
 import { CfnDBCluster, CfnDBInstance } from "@aws-cdk/aws-rds";
+import { CfnTable, Table } from "@aws-cdk/aws-dynamodb";
 
 export interface FSBPConfig {
   iam?: {
@@ -21,6 +27,10 @@ export interface FSBPConfig {
     iamAuth?: boolean;
     autoMinorVersionUpgrades?: boolean;
     copyTagsToSnapshot?: boolean;
+  };
+  dynamodb?: {
+    autoScaling?: boolean;
+    pointInTimeRecovery?: boolean;
   };
 }
 
@@ -55,6 +65,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
         autoMinorVersionUpgrades: true,
         copyTagsToSnapshot: true,
       },
+      dynamodb: { autoScaling: true, pointInTimeRecovery: true },
     }
   ) {
     this.Config = config;
@@ -67,6 +78,8 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
       this.checkLambdaCompliance(node);
     } else if (node instanceof CfnDBInstance || node instanceof CfnDBCluster) {
       this.checkRDSCompliance(node);
+    } else if (node instanceof CfnTable) {
+      this.checkDynamoDBCompliance(node);
     }
   }
 
@@ -418,6 +431,67 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
       ) {
         Annotations.of(node).addError(
           "[IAM.21] IAM customer managed policies that you create should not allow wildcard actions for services."
+        );
+      }
+    }
+  }
+
+  private checkDynamoDBCompliance(node: CfnTable) {
+    if (this.Config.dynamodb?.autoScaling ?? true) {
+      this.checkAutoScaling(node);
+    }
+
+    if (this.Config.dynamodb?.pointInTimeRecovery ?? true) {
+      this.checkPointInTimeRecovery(node);
+    }
+  }
+
+  /**
+   * [DynamoDB.1] DynamoDB tables should automatically scale capacity with demand
+   * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-dynamodb-1
+   */
+  private checkAutoScaling(node: CfnTable) {
+    // Look for ScalableTableAttribute or ScalableTarget
+    if (node.node.scope instanceof Table) {
+      const table = node.node.scope;
+      if (table.hasOwnProperty("tableScaling")) {
+        const tableScaling = table["tableScaling"];
+        if (
+          !tableScaling.hasOwnProperty("scalableReadAttribute") ||
+          !tableScaling.hasOwnProperty("scalableWriteAttribute")
+        ) {
+          // If it's missing a scalable attribute, it's not a scalable table.
+          Annotations.of(node).addError(
+            "[DynamoDB.1] DynamoDB tables should automatically scale capacity with demand"
+          );
+        }
+      } else {
+        // If it's missing tableScaling, it's not a scalable table.
+        Annotations.of(node).addError(
+          "[DynamoDB.1] DynamoDB tables should automatically scale capacity with demand"
+        );
+      }
+    }
+  }
+
+  /**
+   * [DynamoDB.2] DynamoDB tables should have point-in-time recovery enabled
+   * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-dynamodb-2
+   */
+  private checkPointInTimeRecovery(node: CfnTable) {
+    if (!node.pointInTimeRecoverySpecification) {
+      // Nothing explicit about PITR being on or off, raise an error.
+      Annotations.of(node).addError(
+        "[DynamoDB.2] DynamoDB tables should have point-in-time recovery enabled"
+      );
+    } else {
+      if (
+        !isResolvableObject(node.pointInTimeRecoverySpecification) &&
+        !node.pointInTimeRecoverySpecification.pointInTimeRecoveryEnabled
+      ) {
+        // PITR is explicitly off, raise an error.
+        Annotations.of(node).addError(
+          "[DynamoDB.2] DynamoDB tables should have point-in-time recovery enabled"
         );
       }
     }
