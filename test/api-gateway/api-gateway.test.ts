@@ -75,7 +75,7 @@ describe("API Gateway", () => {
   });
 
   describe("[APIGateway.2] API Gateway REST API stages should be configured to use SSL certificates for backend authentication", () => {
-    test("Given an API Gateway REST API stages without and SSL certificate, When synth is run, Then synth should fail", () => {
+    test("Given API Gateway REST API stages without an SSL certificate, When synth is run, Then synth should fail", () => {
       // Arrange
       const stack = new Stack(app, "test-api-gateway-2-stack-fail", {});
       new ApiGatewayBuilder(stack).withClientCertificate(undefined).build();
@@ -94,7 +94,7 @@ describe("API Gateway", () => {
       );
     });
 
-    test("Given an API Gateway REST API stages with an SSL certificates, When synth is run, Then synth should pass", () => {
+    test("Given API Gateway REST API stages with an SSL certificates, When synth is run, Then synth should pass", () => {
       // Arrange
       const stack = new Stack(app, "test-api-gateway-2-stack-pass", {});
       new ApiGatewayBuilder(stack)
@@ -111,7 +111,7 @@ describe("API Gateway", () => {
       expect(synthMessages.length).toBe(0);
     });
 
-    test("Given an API Gateway REST API stages without and SSL certificate and API Gateway.2 is ignored, When synth is run, Then synth should pass", () => {
+    test("Given API Gateway REST API stages without an SSL certificate and API Gateway.2 is ignored, When synth is run, Then synth should pass", () => {
       // Arrange
       const stack = new Stack(app, "test-api-gateway-2-stack-ignore-pass", {});
       new ApiGatewayBuilder(stack).withClientCertificate(undefined).build();
@@ -125,6 +125,61 @@ describe("API Gateway", () => {
       const synthMessages = app
         .synth({ validateOnSynthesis: true, force: true })
         .getStackByName("test-api-gateway-2-stack-ignore-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+  });
+
+  describe("[APIGateway.3] API Gateway REST API stages should have AWS X-Ray tracing enabled", () => {
+    test("Given API Gateway REST API stages with X-Ray tracing disabled, When synth is run, Then synth should fail", () => {
+      // Arrange
+      const stack = new Stack(app, "test-api-gateway-3-stack-fail", {});
+      new ApiGatewayBuilder(stack).withTracingEnabled(false).build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-api-gateway-3-stack-fail").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(1);
+      expect(synthMessages[0].level).toBe("error");
+      expect(synthMessages[0].entry.data).toBe(
+        "[APIGateway.3] API Gateway REST API stages should have AWS X-Ray tracing enabled"
+      );
+    });
+
+    test("Given API Gateway REST API stages with X-Ray tracing enabled, When synth is run, Then synth should pass", () => {
+      // Arrange
+      const stack = new Stack(app, "test-api-gateway-3-stack-pass", {});
+      new ApiGatewayBuilder(stack).withTracingEnabled(true).build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-api-gateway-3-stack-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+
+    test("Given API Gateway REST API stages with X-Ray tracing disabled and API Gateway.3 is ignored, When synth is run, Then synth should pass", () => {
+      // Arrange
+      const stack = new Stack(app, "test-api-gateway-3-stack-ignore-pass", {});
+      new ApiGatewayBuilder(stack).withTracingEnabled(false).build();
+      Aspects.of(app).add(
+        new AWSFoundationalSecurityBestPracticesChecker({
+          apigateway: { xray: false },
+        })
+      );
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-api-gateway-3-stack-ignore-pass").messages;
 
       // Assert
       expect(synthMessages.length).toBe(0);

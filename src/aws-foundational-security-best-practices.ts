@@ -18,6 +18,7 @@ export interface FSBPConfig {
   apigateway?: {
     logging?: boolean;
     ssl?: boolean;
+    xray?: boolean;
   };
   iam?: {
     fullAdmin?: boolean;
@@ -44,7 +45,6 @@ export interface FSBPConfig {
 }
 
 type RDS = CfnDBInstance | CfnDBCluster;
-type ApiGateway = CfnRestApi | CfnStage;
 
 const getDescriptor = (node: RDS): string => {
   return node instanceof CfnDBInstance ? "instances" : "cluster";
@@ -62,7 +62,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
    */
   constructor(
     config: FSBPConfig = {
-      apigateway: { logging: true, ssl: true },
+      apigateway: { logging: true, ssl: true, xray: true },
       iam: { fullAdmin: true, wildcardServiceActions: true },
       lambda: { supportedRuntimes: true },
       rds: {
@@ -83,7 +83,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
   }
 
   public visit(node: IConstruct): void {
-    if (node instanceof CfnRestApi || node instanceof CfnStage) {
+    if (node instanceof CfnStage) {
       this.checkRestApiCompliance(node);
     } else if (node instanceof CfnPolicy) {
       this.checkIAMPolicyCompliance(node);
@@ -96,7 +96,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
     }
   }
 
-  private checkRestApiCompliance(node: ApiGateway) {
+  private checkRestApiCompliance(node: CfnStage) {
     if (this.Config.apigateway?.logging ?? true) {
       this.checkAPILogging(node);
     }
@@ -104,35 +104,36 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
     if (this.Config.apigateway?.ssl ?? true) {
       this.checkSSL(node);
     }
+
+    if (this.Config.apigateway?.xray ?? true) {
+      this.checkXRay(node);
+    }
   }
 
   /**
    * [APIGateway.1] API Gateway REST and WebSocket API logging should be enabled
    * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-apigateway-1
    */
-  private checkAPILogging(node: ApiGateway) {
-    // Logging is defined at the Stage level
-    if (node instanceof CfnStage) {
-      if (!node.methodSettings) {
-        // No explicit method settings defined, raise an error.
+  private checkAPILogging(node: CfnStage) {
+    if (!node.methodSettings) {
+      // No explicit method settings defined, raise an error.
+      Annotations.of(node).addError(
+        "[APIGateway.1] API Gateway REST and WebSocket API logging should be enabled"
+      );
+    } else {
+      if (
+        !isResolvableObject(node.methodSettings) &&
+        node.methodSettings.some(
+          (m) =>
+            !isResolvableObject(m) &&
+            (m.loggingLevel === undefined ||
+              m.loggingLevel === MethodLoggingLevel.OFF)
+        )
+      ) {
+        // Explicit method settings defined, but not all of them have logging or logging is explicitly off.
         Annotations.of(node).addError(
           "[APIGateway.1] API Gateway REST and WebSocket API logging should be enabled"
         );
-      } else {
-        if (
-          !isResolvableObject(node.methodSettings) &&
-          node.methodSettings.some(
-            (m) =>
-              !isResolvableObject(m) &&
-              (m.loggingLevel === undefined ||
-                m.loggingLevel === MethodLoggingLevel.OFF)
-          )
-        ) {
-          // Explicit method settings defined, but not all of them have logging or logging is explicitly off.
-          Annotations.of(node).addError(
-            "[APIGateway.1] API Gateway REST and WebSocket API logging should be enabled"
-          );
-        }
       }
     }
   }
@@ -141,11 +142,22 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
    * [APIGateway.2] API Gateway REST API stages should be configured to use SSL certificates for backend authentication
    * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-apigateway-2
    */
-  private checkSSL(node: ApiGateway) {
-    // SSL is defined at the Stage level
-    if (node instanceof CfnStage && !node.clientCertificateId) {
+  private checkSSL(node: CfnStage) {
+    if (!node.clientCertificateId) {
       Annotations.of(node).addError(
         "[APIGateway.2] API Gateway REST API stages should be configured to use SSL certificates for backend authentication"
+      );
+    }
+  }
+
+  /**
+   * [APIGateway.3] API Gateway REST API stages should have AWS X-Ray tracing enabled
+   * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-apigateway-3
+   */
+  private checkXRay(node: CfnStage) {
+    if (!isResolvableObject(node.tracingEnabled) && !node.tracingEnabled) {
+      Annotations.of(node).addError(
+        "[APIGateway.3] API Gateway REST API stages should have AWS X-Ray tracing enabled"
       );
     }
   }
