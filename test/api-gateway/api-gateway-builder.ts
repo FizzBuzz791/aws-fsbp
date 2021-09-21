@@ -16,8 +16,7 @@ export class ApiGatewayBuilder implements IBuilder<RestApi> {
 
     this._clientCertificate = new CfnClientCertificate(
       this._stack,
-      "ClientCertificate",
-      {}
+      "ClientCertificate"
     );
   }
 
@@ -27,7 +26,7 @@ export class ApiGatewayBuilder implements IBuilder<RestApi> {
     return this;
   }
 
-  withClientCertificate(certificate: CfnClientCertificate): ApiGatewayBuilder {
+  withClientCertificate(certificate?: CfnClientCertificate): ApiGatewayBuilder {
     this._clientCertificate = certificate;
 
     return this;

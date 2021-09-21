@@ -17,6 +17,7 @@ import { CfnTable, Table } from "@aws-cdk/aws-dynamodb";
 export interface FSBPConfig {
   apigateway?: {
     logging?: boolean;
+    ssl?: boolean;
   };
   iam?: {
     fullAdmin?: boolean;
@@ -61,7 +62,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
    */
   constructor(
     config: FSBPConfig = {
-      apigateway: { logging: true },
+      apigateway: { logging: true, ssl: true },
       iam: { fullAdmin: true, wildcardServiceActions: true },
       lambda: { supportedRuntimes: true },
       rds: {
@@ -99,6 +100,10 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
     if (this.Config.apigateway?.logging ?? true) {
       this.checkAPILogging(node);
     }
+
+    if (this.Config.apigateway?.ssl ?? true) {
+      this.checkSSL(node);
+    }
   }
 
   /**
@@ -129,6 +134,19 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
           );
         }
       }
+    }
+  }
+
+  /**
+   * [APIGateway.2] API Gateway REST API stages should be configured to use SSL certificates for backend authentication
+   * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-apigateway-2
+   */
+  private checkSSL(node: ApiGateway) {
+    // SSL is defined at the Stage level
+    if (node instanceof CfnStage && !node.clientCertificateId) {
+      Annotations.of(node).addError(
+        "[APIGateway.2] API Gateway REST API stages should be configured to use SSL certificates for backend authentication"
+      );
     }
   }
 
