@@ -11,6 +11,7 @@ export class ApiGatewayBuilder implements IBuilder<RestApi> {
   private _loggingLevel: MethodLoggingLevel = MethodLoggingLevel.ERROR;
   private _clientCertificate?: CfnClientCertificate;
   private _tracingEnabled: boolean = true;
+  private _cacheDataEncrypted: boolean = true;
 
   constructor(stack: Stack) {
     this._stack = stack;
@@ -39,12 +40,20 @@ export class ApiGatewayBuilder implements IBuilder<RestApi> {
     return this;
   }
 
+  withCacheDataEncrypted(cacheDataEncrypted: boolean): ApiGatewayBuilder {
+    this._cacheDataEncrypted = cacheDataEncrypted;
+
+    return this;
+  }
+
   build(): RestApi {
     const api = new RestApi(this._stack, "ApiGateway", {
       deployOptions: {
         loggingLevel: this._loggingLevel,
         clientCertificateId: this._clientCertificate?.logicalId,
         tracingEnabled: this._tracingEnabled,
+        cacheDataEncrypted: this._cacheDataEncrypted,
+        cachingEnabled: true,
       },
     });
 

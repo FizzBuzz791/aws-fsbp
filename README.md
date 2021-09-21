@@ -16,6 +16,7 @@ Each of the following checks has an associated config option that can be passed 
   - [[APIGateway.1]](https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-apigateway-1) API Gateway REST and WebSocket API logging should be enabled.
   - [[APIGateway.2]](https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-apigateway-2) API Gateway REST API stages should be configured to use SSL certificates for backend authentication
   - [[APIGateway.3]](https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-apigateway-3) API Gateway REST API stages should have AWS X-Ray tracing enabled
+  - [[APIGateway.5]](https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-apigateway-5) API Gateway REST API cache data should be encrypted at rest
 - DynamoDB
   - [[DynamoDB.1]](https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-dynamodb-1) DynamoDB tables should automatically scale capacity with demand.
   - [[DynamoDB.2]](https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-dynamodb-2) DynamoDB tables should have point-in-time recovery enabled.

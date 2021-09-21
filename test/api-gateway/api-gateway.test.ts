@@ -185,4 +185,59 @@ describe("API Gateway", () => {
       expect(synthMessages.length).toBe(0);
     });
   });
+
+  describe("[APIGateway.5] API Gateway REST API cache data should be encrypted at rest", () => {
+    test("Given API Gateway REST API stages with cache encryption disabled, When synth is run, Then synth should fail", () => {
+      // Arrange
+      const stack = new Stack(app, "test-api-gateway-5-stack-fail", {});
+      new ApiGatewayBuilder(stack).withCacheDataEncrypted(false).build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-api-gateway-5-stack-fail").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(1);
+      expect(synthMessages[0].level).toBe("error");
+      expect(synthMessages[0].entry.data).toBe(
+        "[APIGateway.5] API Gateway REST API cache data should be encrypted at rest"
+      );
+    });
+
+    test("Given API Gateway REST API stages with cache encryption enabled, When synth is run, Then synth should pass", () => {
+      // Arrange
+      const stack = new Stack(app, "test-api-gateway-5-stack-pass", {});
+      new ApiGatewayBuilder(stack).withCacheDataEncrypted(true).build();
+      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-api-gateway-5-stack-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+
+    test("Given API Gateway REST API stages with cache encryption disabled and API Gateway.5 is ignored, When synth is run, Then synth should pass", () => {
+      // Arrange
+      const stack = new Stack(app, "test-api-gateway-5-stack-ignore-pass", {});
+      new ApiGatewayBuilder(stack).withCacheDataEncrypted(false).build();
+      Aspects.of(app).add(
+        new AWSFoundationalSecurityBestPracticesChecker({
+          apigateway: { cacheDataEncrypted: false },
+        })
+      );
+
+      // Act
+      const synthMessages = app
+        .synth({ validateOnSynthesis: true, force: true })
+        .getStackByName("test-api-gateway-5-stack-ignore-pass").messages;
+
+      // Assert
+      expect(synthMessages.length).toBe(0);
+    });
+  });
 });

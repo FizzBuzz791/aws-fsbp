@@ -19,6 +19,7 @@ export interface FSBPConfig {
     logging?: boolean;
     ssl?: boolean;
     xray?: boolean;
+    cacheDataEncrypted?: boolean;
   };
   iam?: {
     fullAdmin?: boolean;
@@ -62,7 +63,12 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
    */
   constructor(
     config: FSBPConfig = {
-      apigateway: { logging: true, ssl: true, xray: true },
+      apigateway: {
+        logging: true,
+        ssl: true,
+        xray: true,
+        cacheDataEncrypted: true,
+      },
       iam: { fullAdmin: true, wildcardServiceActions: true },
       lambda: { supportedRuntimes: true },
       rds: {
@@ -107,6 +113,10 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
 
     if (this.Config.apigateway?.xray ?? true) {
       this.checkXRay(node);
+    }
+
+    if (this.Config.apigateway?.cacheDataEncrypted ?? true) {
+      this.checkCacheEncrypted(node);
     }
   }
 
@@ -159,6 +169,30 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
       Annotations.of(node).addError(
         "[APIGateway.3] API Gateway REST API stages should have AWS X-Ray tracing enabled"
       );
+    }
+  }
+
+  /**
+   * [APIGateway.5] API Gateway REST API cache data should be encrypted at rest
+   * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-apigateway-5
+   */
+  private checkCacheEncrypted(node: CfnStage) {
+    if (!node.methodSettings) {
+      Annotations.of(node).addError(
+        "[APIGateway.5] API Gateway REST API cache data should be encrypted at rest"
+      );
+    } else {
+      if (
+        !isResolvableObject(node.methodSettings) &&
+        node.methodSettings.some(
+          (m) =>
+            !isResolvableObject(m) && m.cachingEnabled && !m.cacheDataEncrypted
+        )
+      ) {
+        Annotations.of(node).addError(
+          "[APIGateway.5] API Gateway REST API cache data should be encrypted at rest"
+        );
+      }
     }
   }
 
