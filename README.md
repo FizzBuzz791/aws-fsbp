@@ -12,6 +12,8 @@ Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
 
 Each of the following checks has an associated config option that can be passed to the constructor. All options are enabled by default and must be explicitly opted-out.
 
+- API Gateway
+  - [[APIGateway.1]](https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-apigateway-1) API Gateway REST and WebSocket API logging should be enabled.
 - DynamoDB
   - [[DynamoDB.1]](https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-dynamodb-1) DynamoDB tables should automatically scale capacity with demand.
   - [[DynamoDB.2]](https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-dynamodb-2) DynamoDB tables should have point-in-time recovery enabled.
