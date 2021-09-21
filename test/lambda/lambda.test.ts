@@ -1,6 +1,6 @@
 import { AssetCode, Function, Runtime } from "@aws-cdk/aws-lambda";
 import { App, Aspects, Stack } from "@aws-cdk/core";
-import { AWSFoundationalSecurityBestPracticesChecker } from "../src/aws-foundational-security-best-practices";
+import { AWSFoundationalSecurityBestPracticesChecker } from "../../src/aws-foundational-security-best-practices";
 
 describe("Lambda", () => {
   let app: App;

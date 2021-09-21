@@ -1,6 +1,6 @@
 import { Effect, Policy, PolicyStatement } from "@aws-cdk/aws-iam";
 import { App, Aspects, Stack } from "@aws-cdk/core";
-import { AWSFoundationalSecurityBestPracticesChecker } from "../src/aws-foundational-security-best-practices";
+import { AWSFoundationalSecurityBestPracticesChecker } from "../../src/aws-foundational-security-best-practices";
 
 describe("IAM", () => {
   let app: App;

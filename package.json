@@ -25,6 +25,7 @@
   },
   "homepage": "https://github.com/FizzBuzz791/aws-fsbp#readme",
   "dependencies": {
+    "@aws-cdk/aws-apigateway": "^1.123.0",
     "@aws-cdk/aws-dynamodb": "^1.123.0",
     "@aws-cdk/aws-ec2": "^1.123.0",
     "@aws-cdk/aws-iam": "^1.123.0",

@@ -1,4 +1,3 @@
-import { AttributeType, Table } from "@aws-cdk/aws-dynamodb";
 import { App, Aspects, Stack } from "@aws-cdk/core";
 import { AWSFoundationalSecurityBestPracticesChecker } from "../../src/aws-foundational-security-best-practices";
 import { DynamoDbBuilder } from "./DynamoDbBuilder";
