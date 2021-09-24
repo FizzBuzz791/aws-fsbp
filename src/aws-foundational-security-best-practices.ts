@@ -4,15 +4,12 @@ import {
   IConstruct,
   isResolvableObject,
 } from "@aws-cdk/core";
-import {
-  CfnRestApi,
-  CfnStage,
-  MethodLoggingLevel,
-} from "@aws-cdk/aws-apigateway";
+import { CfnStage, MethodLoggingLevel } from "@aws-cdk/aws-apigateway";
 import { CfnPolicy, Effect } from "@aws-cdk/aws-iam";
 import { CfnFunction, Runtime } from "@aws-cdk/aws-lambda";
 import { CfnDBCluster, CfnDBInstance } from "@aws-cdk/aws-rds";
 import { CfnTable, Table } from "@aws-cdk/aws-dynamodb";
+import { CfnAutoScalingGroup } from "@aws-cdk/aws-autoscaling";
 
 export interface FSBPConfig {
   apigateway?: {
@@ -20,6 +17,9 @@ export interface FSBPConfig {
     ssl?: boolean;
     xray?: boolean;
     cacheDataEncrypted?: boolean;
+  };
+  autoScalingGroup?: {
+    loadBalancerHealthCheck?: boolean;
   };
   iam?: {
     fullAdmin?: boolean;
@@ -69,6 +69,9 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
         xray: true,
         cacheDataEncrypted: true,
       },
+      autoScalingGroup: {
+        loadBalancerHealthCheck: true,
+      },
       iam: { fullAdmin: true, wildcardServiceActions: true },
       lambda: { supportedRuntimes: true },
       rds: {
@@ -91,6 +94,8 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
   public visit(node: IConstruct): void {
     if (node instanceof CfnStage) {
       this.checkRestApiCompliance(node);
+    } else if (node instanceof CfnAutoScalingGroup) {
+      this.checkAutoScalingGroupCompliance(node);
     } else if (node instanceof CfnPolicy) {
       this.checkIAMPolicyCompliance(node);
     } else if (node instanceof CfnFunction) {
@@ -191,6 +196,26 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
       ) {
         Annotations.of(node).addError(
           "[APIGateway.5] API Gateway REST API cache data should be encrypted at rest"
+        );
+      }
+    }
+  }
+
+  private checkAutoScalingGroupCompliance(node: CfnAutoScalingGroup) {
+    if (this.Config.autoScalingGroup?.loadBalancerHealthCheck ?? true) {
+      this.checkLoadBalancerHealthCheck(node);
+    }
+  }
+
+  /**
+   * [AutoScaling.1] Auto Scaling groups associated with a load balancer should use load balancer health checks
+   * Ref: https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-standards-fsbp-controls.html#fsbp-autoscaling-1
+   */
+  private checkLoadBalancerHealthCheck(node: CfnAutoScalingGroup) {
+    if (node.loadBalancerNames?.length ?? 0 > 0) {
+      if (!node.healthCheckType || !node.healthCheckGracePeriod) {
+        Annotations.of(node).addError(
+          "[AutoScaling.1] Auto Scaling groups associated with a load balancer should use load balancer health checks"
         );
       }
     }
