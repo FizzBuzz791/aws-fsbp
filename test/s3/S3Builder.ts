@@ -1,3 +1,4 @@
+import { AnyPrincipal, Effect, PolicyStatement } from "@aws-cdk/aws-iam";
 import { Bucket, BucketEncryption } from "@aws-cdk/aws-s3";
 import { Stack } from "@aws-cdk/core";
 import { IBuilder } from "../IBuilder";
@@ -17,8 +18,19 @@ export class S3Builder implements IBuilder<Bucket> {
   }
 
   build(): Bucket {
-    return new Bucket(this._stack, "Bucket", {
+    const bucket = new Bucket(this._stack, "Bucket", {
       encryption: this._encryption,
     });
+    bucket.addToResourcePolicy(
+      new PolicyStatement({
+        actions: ["s3:*"],
+        effect: Effect.DENY,
+        conditions: {
+          Bool: { "aws:SecureTransport": false },
+        },
+        principals: [new AnyPrincipal()],
+      })
+    );
+    return bucket;
   }
 }

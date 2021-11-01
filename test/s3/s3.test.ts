@@ -37,12 +37,9 @@ describe("S3", () => {
       Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
 
       // Act
-      const synthApp = app
+      const synthMessages = app
         .synth({ validateOnSynthesis: true, force: true })
-        .getStackByName("test-s3-4-stack-pass");
-      console.log(JSON.stringify(synthApp.template, null, 2));
-      const synthMessages = synthApp.messages;
-      console.log(synthMessages.map((m) => m.entry.data));
+        .getStackByName("test-s3-4-stack-pass").messages;
 
       // Assert
       expect(synthMessages.length).toBe(0);
@@ -67,4 +64,27 @@ describe("S3", () => {
       expect(synthMessages.length).toBe(0);
     });
   });
+
+  // describe("[S3.5] S3 buckets should require requests to use Secure Socket Layer", () => {
+  //   test("Given an S3 Bucket that doesn't require SSL, When synth is run, Then synth should fail", () => {
+  //     // Arrange
+  //     const stack = new Stack(app, "test-s3-5-stack-fail", {});
+  //     new S3Builder(stack).build();
+  //     Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+
+  //     // Act
+  //     const synthApp = app
+  //       .synth({ validateOnSynthesis: true, force: true })
+  //       .getStackByName("test-s3-5-stack-fail");
+  //     console.log(JSON.stringify(synthApp.template));
+  //     const synthMessages = synthApp.messages;
+
+  //     // Assert
+  //     expect(synthMessages.length).toBe(1);
+  //     expect(synthMessages[0].level).toBe("error");
+  //     expect(synthMessages[0].entry.data).toBe(
+  //       "[S3.5] S3 buckets should require requests to use Secure Socket Layer"
+  //     );
+  //   });
+  // });
 });
