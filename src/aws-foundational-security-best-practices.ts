@@ -17,6 +17,8 @@ import { DynamoDBComplianceChecker, DynamoDBConfig } from "./dynamo-db-checker";
 import { IAMConfig, IAMPolicyComplianceChecker } from "./iam-policy-checker";
 import { LambdaComplianceChecker, LambdaConfig } from "./lambda-checker";
 import { RDSComplianceChecker, RDSConfig } from "./rds-compliance-checker";
+import { S3ComplianceChecker, S3Config } from "./s3-checker";
+import { CfnBucket } from "@aws-cdk/aws-s3";
 
 export interface FSBPConfig {
   apigateway?: ApiGatewayConfig;
@@ -25,6 +27,7 @@ export interface FSBPConfig {
   iam?: IAMConfig;
   lambda?: LambdaConfig;
   rds?: RDSConfig;
+  s3?: S3Config;
 }
 
 /**
@@ -37,6 +40,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
   #IAMPolicyComplianceChecker: IAMPolicyComplianceChecker;
   #LambdaComplianceChecker: LambdaComplianceChecker;
   #RDSComplianceChecker: RDSComplianceChecker;
+  #S3ComplianceChecker: S3ComplianceChecker;
 
   /**
    * Initialise a new Checker. All values in the configuration default to true if not provided.
@@ -67,6 +71,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
         copyTagsToSnapshot: true,
       },
       dynamodb: { autoScaling: true, pointInTimeRecovery: true },
+      s3: { serverSideEncryption: true },
     }
   ) {
     this.#ApiGatewayComplianceChecker = new ApiGatewayComplianceChecker(
@@ -82,6 +87,7 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
     );
     this.#LambdaComplianceChecker = new LambdaComplianceChecker(config.lambda!);
     this.#RDSComplianceChecker = new RDSComplianceChecker(config.rds!);
+    this.#S3ComplianceChecker = new S3ComplianceChecker(config.s3!);
   }
 
   public visit(node: IConstruct): void {
@@ -97,6 +103,8 @@ export class AWSFoundationalSecurityBestPracticesChecker implements IAspect {
       this.#LambdaComplianceChecker.checkCompliance(node);
     } else if (node instanceof CfnDBInstance || node instanceof CfnDBCluster) {
       this.#RDSComplianceChecker.checkCompliance(node);
+    } else if (node instanceof CfnBucket) {
+      this.#S3ComplianceChecker.checkCompliance(node);
     }
   }
 }
