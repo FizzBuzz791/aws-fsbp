@@ -1,11 +1,15 @@
 import { AssetCode, Function, Runtime } from "@aws-cdk/aws-lambda";
 import { Bucket } from "@aws-cdk/aws-s3";
 import { App, Aspects, Stack } from "@aws-cdk/core";
-import { AWSFoundationalSecurityBestPracticesChecker } from "../../src/aws-foundational-security-best-practices";
+import {
+  AWSFoundationalSecurityBestPracticesChecker,
+  FSBPConfig,
+} from "../../src/aws-foundational-security-best-practices";
 import { LambdaBuilder } from "./lambda-builder";
 
 describe("Lambda", () => {
   let app: App;
+  let config: FSBPConfig = { s3: { serverSideEncryption: false } };
 
   beforeEach(() => {
     app = new App();
@@ -16,7 +20,9 @@ describe("Lambda", () => {
       // Arrange
       const stack = new Stack(app, "test-lambda-2-stack-fail", {});
       new LambdaBuilder(stack).withRuntime(Runtime.NODEJS).build();
-      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+      Aspects.of(app).add(
+        new AWSFoundationalSecurityBestPracticesChecker(config)
+      );
       // Act
       const synthMessages = app
         .synth({ validateOnSynthesis: true, force: true })
@@ -35,6 +41,7 @@ describe("Lambda", () => {
       new LambdaBuilder(stack).withRuntime(Runtime.NODEJS).build();
       Aspects.of(app).add(
         new AWSFoundationalSecurityBestPracticesChecker({
+          ...config,
           lambda: { supportedRuntimes: false },
         })
       );
@@ -50,7 +57,9 @@ describe("Lambda", () => {
       // Arrange
       const stack = new Stack(app, "test-lambda-2-stack-pass", {});
       new LambdaBuilder(stack).withRuntime(Runtime.NODEJS_14_X).build();
-      Aspects.of(app).add(new AWSFoundationalSecurityBestPracticesChecker());
+      Aspects.of(app).add(
+        new AWSFoundationalSecurityBestPracticesChecker(config)
+      );
       // Act
       const synthMessages = app
         .synth({ validateOnSynthesis: true, force: true })
